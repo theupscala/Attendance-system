@@ -1,0 +1,520 @@
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
+import { MapPin, X, Search, Calendar, Download, Pencil, Filter } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { useNavigate } from 'react-router-dom';
+
+const AdminAttendance = () => {
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Modals & Forms
+  
+  const [isManageRecordModalOpen, setIsManageRecordModalOpen] = useState(false);
+  const [manageRecordEmployeeId, setManageRecordEmployeeId] = useState('');
+  const [manageRecordData, setManageRecordData] = useState({ date: '', reason: '' });
+  const [manageRecordAction, setManageRecordAction] = useState('Leave');
+  const [isSubmittingRecord, setIsSubmittingRecord] = useState(false);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('All');
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  // Image Preview
+  const [previewImage, setPreviewImage] = useState(null);
+
+  const navigate = useNavigate();
+
+  // Fetch employees on mount
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const { data } = await api.get('/admin/employees');
+        setEmployees(data);
+      } catch (err) {
+        console.error('Failed to fetch employees', err);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  // Fetch attendance when employee is selected
+  useEffect(() => {
+    if (!selectedEmployeeId) {
+      setAttendanceRecords([]);
+      return;
+    }
+    const fetchAttendance = async () => {
+      setIsLoading(true);
+      try {
+        const { data } = await api.get(`/admin/attendance/${selectedEmployeeId}`);
+        setAttendanceRecords(data);
+      } catch (err) {
+        console.error('Failed to fetch attendance records', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAttendance();
+  }, [selectedEmployeeId]);
+
+
+
+  const handleRecordSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmittingRecord(true);
+    try {
+      if (manageRecordAction === 'Leave') {
+        await api.post('/admin/attendance/mark-leave', {
+          employeeId: manageRecordEmployeeId,
+          date: manageRecordData.date,
+          reason: manageRecordData.reason
+        });
+        alert('Leave marked successfully for this employee');
+      } else {
+        await api.post('/admin/attendance/manual', {
+          employeeId: manageRecordEmployeeId,
+          date: manageRecordData.date,
+          status: manageRecordAction, // 'Present' or 'Half Day'
+          reason: manageRecordData.reason
+        });
+        alert(`${manageRecordAction} attendance added successfully`);
+      }
+      setIsManageRecordModalOpen(false);
+      setManageRecordData({ date: '', reason: '' });
+      if (selectedEmployeeId === manageRecordEmployeeId) {
+        setAttendanceRecords([]);
+        setSelectedEmployeeId('');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit record');
+    } finally {
+      setIsSubmittingRecord(false);
+    }
+  };
+
+
+
+  // Directory Filters
+  const departments = ['All', ...new Set(employees.map(e => e.department || 'General'))];
+  const filteredEmployees = employees.filter(emp => {
+    const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) || emp.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesDept = selectedDepartment === 'All' || (emp.department || 'General') === selectedDepartment;
+    return matchesSearch && matchesDept;
+  });
+
+  const selectedEmp = employees.find(e => e._id === selectedEmployeeId);
+  const salaryType = selectedEmp?.salaryType || 'Monthly';
+
+  // Attendance Filters
+  const [year, monthStr] = selectedMonth.split('-');
+  const filterYear = parseInt(year, 10);
+  const filterMonth = parseInt(monthStr, 10) - 1;
+
+  const currentMonthRecords = attendanceRecords.filter(r => {
+    const d = new Date(r.date);
+    return d.getFullYear() === filterYear && d.getMonth() === filterMonth;
+  });
+
+  const presentDays = currentMonthRecords.filter(r => r.status === 'Present').length;
+
+  let calculatedSalary = 0;
+  if (selectedEmp) {
+    const shiftStartStr = selectedEmp.shiftStart || '09:00';
+    const shiftEndStr = selectedEmp.shiftEnd || '18:00';
+    
+    const parseTime = (timeStr) => {
+      const [h, m] = timeStr.split(':').map(Number);
+      return (h || 0) * 60 + (m || 0);
+    };
+    
+    const startMins = parseTime(shiftStartStr);
+    const endMins = parseTime(shiftEndStr);
+    const expectedMins = Math.max(0, endMins - startMins);
+    
+    const rate = selectedEmp.salary || 0;
+    const dailySalary = (expectedMins / 60) * rate;
+    let casualLeaveCount = 0;
+
+    currentMonthRecords.forEach(record => {
+      const recordDate = new Date(record.date);
+      const isSunday = recordDate.getDay() === 0;
+
+      if (record.status === 'Present') {
+        if (record.punchIn?.time && record.punchOut?.time) {
+          const punchInDate = new Date(record.punchIn.time);
+          const punchOutDate = new Date(record.punchOut.time);
+          
+          const punchInMins = punchInDate.getHours() * 60 + punchInDate.getMinutes();
+          const punchOutMins = punchOutDate.getHours() * 60 + punchOutDate.getMinutes();
+          
+          let effectiveInMins = punchInMins;
+          let effectiveOutMins = punchOutMins;
+
+          // 10-min grace period
+          if (punchInMins <= startMins + 10) {
+            effectiveInMins = startMins;
+          }
+          if (punchOutMins >= endMins - 10) {
+            effectiveOutMins = endMins;
+          }
+          
+          // Cap early arrivals to start time (no extra pay) and late departures to end time
+          effectiveInMins = Math.max(effectiveInMins, startMins);
+          effectiveOutMins = Math.min(effectiveOutMins, endMins);
+
+          let actualMins = Math.max(0, effectiveOutMins - effectiveInMins);
+
+          calculatedSalary += (actualMins / 60) * rate;
+        } else if (record.isManualEntry && (!record.punchIn?.time || !record.punchOut?.time)) {
+          // Manual 'Present' update gets a full day's salary
+          calculatedSalary += dailySalary;
+        }
+      } else if (record.status === 'Half Day') {
+        calculatedSalary += (dailySalary / 2);
+      } else if ((record.status === 'Leave' || record.status === 'Casual Leave') && salaryType === 'Monthly' && !isSunday) {
+        if (casualLeaveCount < 1) {
+          calculatedSalary += dailySalary;
+          casualLeaveCount++;
+        }
+      }
+    });
+
+    if (salaryType === 'Monthly') {
+      let sundaysCount = 0;
+      const d = new Date(filterYear, filterMonth, 1);
+      while (d.getMonth() === filterMonth) {
+        if (d.getDay() === 0) sundaysCount++;
+        d.setDate(d.getDate() + 1);
+      }
+      calculatedSalary += sundaysCount * dailySalary;
+    }
+  }
+
+  const generatePayslip = () => {
+    if (!selectedEmp) return;
+    const doc = new jsPDF();
+    doc.setFontSize(22);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Company Name", 105, 20, { align: "center" });
+    doc.setFontSize(16);
+    doc.text("Monthly Payslip", 105, 30, { align: "center" });
+    doc.setFontSize(12);
+    doc.text(`Employee Name: ${selectedEmp.name}`, 14, 45);
+    doc.text(`Employee ID: ${selectedEmp.employeeId}`, 14, 52);
+    doc.text(`Department: ${selectedEmp.department || 'General'}`, 14, 59);
+    doc.text(`Date Generated: ${new Date().toLocaleDateString()}`, 14, 66);
+    doc.setFontSize(14);
+    doc.text("Salary Summary", 14, 80);
+    
+    autoTable(doc, {
+      startY: 85,
+      head: [["Description", "Details"]],
+      body: [
+        ["Expected Shift", `${selectedEmp.shiftStart || '09:00'} to ${selectedEmp.shiftEnd || '18:00'}`],
+        ["Hourly Rate", `INR ${selectedEmp.salary || 0}`],
+        ["Total Days Present", presentDays.toString()],
+        ["Total Calculated Salary", `INR ${calculatedSalary.toFixed(2)}`]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [79, 70, 229] }
+    });
+
+    doc.setFontSize(14);
+    doc.text("Attendance Breakdown", 14, doc.lastAutoTable.finalY + 15);
+    const attendanceBody = currentMonthRecords.map(record => [
+      new Date(record.date).toLocaleDateString(),
+      record.punchIn?.time ? new Date(record.punchIn.time).toLocaleTimeString() : '--:--',
+      record.punchOut?.time ? new Date(record.punchOut.time).toLocaleTimeString() : '--:--',
+      record.status
+    ]);
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 20,
+      head: [["Date", "Punch In", "Punch Out", "Status"]],
+      body: attendanceBody,
+      theme: 'striped',
+      headStyles: { fillColor: [100, 100, 100] }
+    });
+    doc.save(`Payslip_${selectedEmp.employeeId}_${new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}.pdf`);
+  };
+
+  const getPhotoUrl = (photo) => {
+    if (!photo) return null;
+    return photo.startsWith('/uploads') ? `http://localhost:5000${photo}` : photo;
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto h-full flex flex-col">
+      <div className="flex justify-between items-center mb-6 shrink-0">
+        <h1 className="text-2xl font-bold text-primary">
+          {selectedEmployeeId ? 'Employee Attendance History' : 'Select Employee to View Attendance'}
+        </h1>
+        <div className="flex items-center gap-4">
+          {selectedEmployeeId ? (
+            <>
+              <input type="month" className="input-field text-sm py-1.5" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
+              <button onClick={() => setSelectedEmployeeId('')} className="text-gray-500 hover:text-primary font-medium">
+                &larr; Back to Directory
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      {!selectedEmployeeId ? (
+        <div className="card w-full flex flex-col shadow-sm border-0 flex-1">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3.5 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search employees by name or ID..."
+                className="input-field pl-9 w-full text-sm"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="relative md:w-64">
+              <Filter className="absolute left-3 top-3.5 text-gray-400" size={16} />
+              <select
+                className="input-field pl-9 w-full text-sm appearance-none"
+                value={selectedDepartment}
+                onChange={e => setSelectedDepartment(e.target.value)}
+              >
+                {departments.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b-2 text-sm text-gray-400 font-bold uppercase tracking-wider">
+                  <th className="pb-3 pr-4">Employee</th>
+                  <th className="pb-3 pr-4 text-center">Dept</th>
+                  <th className="pb-3 pr-4 text-center">Salary</th>
+                  <th className="pb-3 pr-4 text-center">Status</th>
+                  <th className="pb-3 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEmployees.map(emp => (
+                  <tr key={emp._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                    <td className="py-4 pr-4 font-bold text-gray-700 flex flex-col">
+                      <span className="flex items-center gap-2">
+                        {emp.name} 
+                        {emp.role === 'Admin' && <span className="w-2.5 h-2.5 rounded-full bg-green-500" title="Admin"></span>}
+                      </span>
+                      <span className="text-xs text-gray-500 font-medium">{emp.employeeId}</span>
+                    </td>
+                    <td className="py-4 pr-4 text-center text-sm font-medium text-gray-600">{emp.department || 'General'}</td>
+                    <td className="py-4 pr-4 text-center">
+                      <div className="flex flex-col items-center">
+                        <span className="font-bold text-gray-700">₹{emp.salary || 0}/hr</span>
+                        <span className={`px-2 py-0.5 mt-1 rounded text-[10px] uppercase font-bold ${emp.salaryType === 'Weekly' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>{emp.salaryType || 'Monthly'}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 pr-4 text-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setManageRecordEmployeeId(emp._id);
+                          setManageRecordAction('Present');
+                          setIsManageRecordModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 mx-auto"
+                      >
+                        <Pencil size={12} /> Update Status
+                      </button>
+                    </td>
+                    <td className="py-4 text-center">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => setSelectedEmployeeId(emp._id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-primary hover:bg-blue-100 rounded-lg transition-colors font-bold text-sm"
+                        >
+                          <Calendar size={14} /> View Attendance
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredEmployees.length === 0 && <p className="text-center text-sm text-gray-500 py-12">No employees found matching filters.</p>}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4 flex-1 min-h-0">
+          <div className="card flex justify-between items-center py-4 px-6 border-0 shadow-sm border-l-4 border-l-primary shrink-0">
+            <div className="flex flex-col">
+              <h2 className="font-bold text-xl text-gray-800">{selectedEmp?.name} <span className="text-sm font-medium text-gray-500">({selectedEmp?.employeeId})</span></h2>
+              <div className="flex gap-4 mt-2 text-sm text-gray-600">
+                <span><strong>Dept:</strong> {selectedEmp?.department || 'General'}</span>
+                <span><strong>Days Present:</strong> {presentDays}</span>
+                <span className="text-green-600 font-bold"><strong>Total Salary:</strong> ₹{calculatedSalary.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={generatePayslip} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors font-bold text-sm shadow-sm">
+                <Download size={16} /> Payslip
+              </button>
+            </div>
+          </div>
+
+          <div className="card flex-1 overflow-hidden flex flex-col border-0 shadow-sm p-0">
+            <div className="overflow-y-auto flex-1 p-6">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-full text-gray-400">Loading records...</div>
+              ) : attendanceRecords.length === 0 ? (
+                <div className="flex justify-center items-center h-full text-gray-400 flex-col gap-2">
+                  <Search size={32} className="opacity-20" />
+                  <p>No attendance records found.</p>
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b-2 text-sm text-gray-400 font-bold uppercase tracking-wider">
+                      <th className="pb-3 pr-4">Date</th>
+                      <th className="pb-3 pr-4 text-center">Punch Image</th>
+                      <th className="pb-3 pr-4">Punch In</th>
+                      <th className="pb-3 pr-4">Punch Out</th>
+                      <th className="pb-3 pr-4 text-center">Status</th>
+                      <th className="pb-3 pr-4">Location</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentMonthRecords.map(record => {
+                      // Determine the best photo to show (prefer attendanceImage, fallback to photo)
+                      const displayPhoto = record.punchIn?.attendanceImage || record.punchIn?.photo;
+                      
+                      return (
+                        <tr key={record._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                          <td className="py-4 pr-4 font-bold text-gray-700">{new Date(record.date).toLocaleDateString()}</td>
+                          <td className="py-4 pr-4 text-center">
+                            {displayPhoto ? (
+                              <img
+                                src={getPhotoUrl(displayPhoto)}
+                                alt="Punch"
+                                onClick={() => setPreviewImage(getPhotoUrl(displayPhoto))}
+                                className="w-14 h-14 mx-auto rounded-xl object-cover border-2 border-white shadow-soft cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                                title="Click to view full attendance proof"
+                              />
+                            ) : (
+                              <span className="text-gray-300 text-xs font-medium bg-gray-100 px-2 py-1 rounded">No Photo</span>
+                            )}
+                          </td>
+                          <td className="py-4 pr-4 text-sm font-medium text-gray-600">
+                            {record.punchIn?.time ? new Date(record.punchIn.time).toLocaleTimeString() : '--:--'}
+                          </td>
+                          <td className="py-4 pr-4 text-sm font-medium text-gray-600">
+                            {record.punchOut?.time ? new Date(record.punchOut.time).toLocaleTimeString() : '--:--'}
+                          </td>
+                          <td className="py-4 pr-4 text-center">
+                            <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${record.status === 'Present' ? 'bg-green-100 text-green-700' : record.status === 'Casual Leave' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700'}`}>
+                              {record.status}
+                            </span>
+                          </td>
+                          <td className="py-4 pr-4">
+                            {record.punchIn?.location?.latitude ? (
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs text-gray-500 max-w-[200px] truncate" title={record.punchIn.location.address}>
+                                  {record.punchIn.location.address || 'Address Not Available'}
+                                </span>
+                                <a
+                                  href={`https://www.google.com/maps?q=${record.punchIn.location.latitude},${record.punchIn.location.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-primary hover:text-accent font-bold text-xs"
+                                >
+                                  <MapPin size={12} /> Open in Maps
+                                </a>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-300 font-medium">No GPS</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Modal (Professional Proof) */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 cursor-pointer backdrop-blur-sm"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-3xl w-full" onClick={e => e.stopPropagation()}>
+            <img
+              src={previewImage}
+              alt="Attendance Proof"
+              className="w-full rounded-2xl shadow-2xl"
+            />
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black transition-colors backdrop-blur-md"
+            >
+              <X size={20} />
+            </button>
+            <div className="absolute -bottom-8 left-0 right-0 text-center text-white/70 text-sm">
+              Permanent Attendance Record
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
+      {/* Manage Record Modal */}
+      {isManageRecordModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative flex flex-col md:flex-row gap-6">
+            <button onClick={() => setIsManageRecordModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
+              <X size={20} />
+            </button>
+            <div className="flex-1 md:border-r border-gray-100 md:pr-6">
+              <h3 className="font-bold text-xl mb-4 text-primary">Select Date</h3>
+              <input type="date" required className="input-field w-full h-12 text-lg" value={manageRecordData.date} onChange={e => setManageRecordData({ ...manageRecordData, date: e.target.value })} />
+              <div className="mt-4 text-sm text-gray-500">
+                <p>Choose the date for which you want to mark the attendance status.</p>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-xl mb-4 text-primary">Update Status</h3>
+              <div className="flex flex-col gap-3">
+                <button type="button" className={`w-full py-3 rounded-lg text-sm font-bold transition-colors border-2 ${manageRecordAction === 'Present' ? 'bg-green-50 border-green-500 text-green-700' : 'bg-gray-50 border-transparent text-gray-600 hover:bg-gray-100'}`} onClick={() => setManageRecordAction('Present')}>Mark Full Day (Present)</button>
+                <button type="button" className={`w-full py-3 rounded-lg text-sm font-bold transition-colors border-2 ${manageRecordAction === 'Half Day' ? 'bg-orange-50 border-orange-500 text-orange-700' : 'bg-gray-50 border-transparent text-gray-600 hover:bg-gray-100'}`} onClick={() => setManageRecordAction('Half Day')}>Mark Half Day</button>
+                <button type="button" className={`w-full py-3 rounded-lg text-sm font-bold transition-colors border-2 ${manageRecordAction === 'Leave' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-gray-50 border-transparent text-gray-600 hover:bg-gray-100'}`} onClick={() => setManageRecordAction('Leave')}>Mark Leave</button>
+                {employees.find(e => e._id === manageRecordEmployeeId)?.salaryType === 'Monthly' && (
+                  <button type="button" className={`w-full py-3 rounded-lg text-sm font-bold transition-colors border-2 ${manageRecordAction === 'Casual Leave' ? 'bg-purple-50 border-purple-500 text-purple-700' : 'bg-gray-50 border-transparent text-gray-600 hover:bg-gray-100'}`} onClick={() => setManageRecordAction('Casual Leave')}>Mark Casual Leave</button>
+                )}
+              </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reason / Note (Optional)</label>
+                <input type="text" className="input-field w-full" placeholder="e.g. Manual Update" value={manageRecordData.reason} onChange={e => setManageRecordData({ ...manageRecordData, reason: e.target.value })} />
+              </div>
+              <button onClick={handleRecordSubmit} disabled={isSubmittingRecord || !manageRecordData.date} className="btn-primary w-full mt-6 flex justify-center items-center gap-2 py-3 shadow-soft">
+                {isSubmittingRecord ? 'Saving...' : 'Save Record'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminAttendance;
