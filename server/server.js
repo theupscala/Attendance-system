@@ -13,7 +13,13 @@ const app = express();
 
 // Security Middlewares
 app.use(helmet({ crossOriginResourcePolicy: false })); // Allow cross-origin images
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://mmk97pouhmxfvfzs62ok2ai9.187.127.182.214.sslip.io',
+    'https://mmk97pouhmxfvfzs62ok2ai9.187.127.182.214.sslip.io'
+  ],
+  credentials: true
+}));
 
 // Rate Limiting
 const apiLimiter = rateLimit({
