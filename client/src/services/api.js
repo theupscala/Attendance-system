@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://rttdwo6s5npu5ielursfnvqw.187.127.182.214.sslip.io/', // Adjust in production
+  baseURL: 'http://rttdwo6s5npu5ielursfnvqw.187.127.182.214.sslip.io/api', // Adjust in production
   headers: {
     'Content-Type': 'application/json',
   }
