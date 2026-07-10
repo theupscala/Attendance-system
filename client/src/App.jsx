@@ -26,11 +26,7 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <Router>
-        {/* Content Security Policy to prevent XSS and malware attacks */}
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http://localhost:5000; connect-src 'self' ws: http://localhost:5000; frame-src 'self' https://maps.google.com;" />
-     
-      <Routes>
+   
         <Route path="/login" element={<Login />} />
         
         <Route path="/" element={
