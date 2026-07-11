@@ -55,6 +55,43 @@ const registerUser = async (req, res) => {
   }
 };
 
+// @desc    Register a new admin
+// @route   POST /api/auth/register-admin
+// @access  Public
+const registerAdmin = async (req, res) => {
+  try {
+    const { name, employeeId, password } = req.body;
+
+    const userExists = await User.findOne({ employeeId });
+
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const user = await User.create({
+      name,
+      employeeId,
+      password,
+      role: 'Admin',
+    });
+
+    if (user) {
+      return res.status(201).json({
+        _id: user._id,
+        name: user.name,
+        employeeId: user.employeeId,
+        role: user.role,
+        token: generateToken(user._id),
+      });
+    }
+
+    return res.status(400).json({ message: 'Invalid admin data' });
+  } catch (error) {
+    console.error('REGISTER ADMIN ERROR:', error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc Auth user & get token
 // @route POST /api/auth/login
 // @access Public
@@ -143,4 +180,5 @@ module.exports = {
   loginUser,
   getUserProfile,
   registerUser,
+  registerAdmin,
 };

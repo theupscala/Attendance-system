@@ -13,6 +13,7 @@ import History from './pages/History';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminHolidays from './pages/AdminHolidays';
+import AdminSignup from './pages/AdminSignup';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
@@ -37,6 +38,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/admin-signup" element={<AdminSignup />} />
 
         <Route
           path="/"
@@ -55,6 +57,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+
 
         <Route
           path="/profile"

@@ -1,28 +1,33 @@
-import React, { useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, User, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, User, Lock, Eye, EyeOff, Building } from 'lucide-react';
+import api from '../services/api';
 
-const Login = () => {
+const AdminSignup = () => {
+  const [name, setName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
   
-  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccessMsg('');
     
     try {
-      await login(employeeId, password);
-      navigate('/dashboard');
+      await api.post('/auth/register-admin', { name, employeeId, password });
+      setSuccessMsg('Admin created successfully! Redirecting to login...');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check credentials.');
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -32,11 +37,11 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-primary/5 p-4">
       <div className="card w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="bg-primary text-white w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft">
-            <LogIn size={32} />
+          <div className="bg-accent text-white w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft">
+            <UserPlus size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-primary mb-2">Welcome Back</h1>
-          <p className="text-gray-500">Sign in to manage your attendance</p>
+          <h1 className="text-2xl font-bold text-primary mb-2">Create Admin</h1>
+          <p className="text-gray-500">Sign up a new administrative account</p>
         </div>
 
         {error && (
@@ -45,16 +50,37 @@ const Login = () => {
           </div>
         )}
 
+        {successMsg && (
+          <div className="bg-green-50 text-green-600 p-3 rounded-xl text-sm mb-4 text-center">
+            {successMsg}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <div className="relative">
+              <Building size={20} className="absolute left-3 top-3 text-gray-400" />
+              <input 
+                type="text" 
+                required
+                className="input-field pl-10" 
+                placeholder="Enter admin name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Username / ID</label>
             <div className="relative">
               <User size={20} className="absolute left-3 top-3 text-gray-400" />
               <input 
                 type="text" 
                 required
                 className="input-field pl-10" 
-                placeholder="Enter your username"
+                placeholder="Enter unique ID or username"
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
               />
@@ -69,7 +95,7 @@ const Login = () => {
                 type={showPassword ? "text" : "password"}
                 required
                 className="input-field pl-10 pr-10" 
-                placeholder="Enter your password"
+                placeholder="Enter secure password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -83,38 +109,26 @@ const Login = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="rounded text-accent focus:ring-accent" />
-              <span className="text-gray-600">Remember me</span>
-            </label>
-          </div>
-
           <button 
             type="submit" 
             disabled={isLoading}
-            className="btn-primary w-full flex justify-center items-center py-3"
+            className="btn-primary w-full flex justify-center items-center py-3 bg-accent hover:bg-accent/90"
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading ? 'Creating...' : 'Sign Up as Admin'}
           </button>
         </form>
 
-        <div className="mt-8 text-center flex flex-col gap-2">
+        <div className="mt-8 text-center">
           <p className="text-gray-500 text-sm">
-            Please contact your administrator for an employee account.
+            Already have an account?{' '}
+            <Link to="/login" className="text-accent hover:underline font-medium">
+              Sign in here
+            </Link>
           </p>
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-gray-500 text-sm">
-              Setting up a new system?{' '}
-              <Link to="/admin-signup" className="text-accent hover:underline font-medium">
-                Create Admin Account
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default AdminSignup;
