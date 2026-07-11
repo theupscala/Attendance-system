@@ -14,6 +14,9 @@ const CameraCapture = forwardRef(({ onCapture }, ref) => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera requires HTTPS. Please access the site using a secure (https://) connection.');
+      }
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: 'user' },
         audio: false 

@@ -29,7 +29,7 @@ const useGeolocation = (isFieldWorker = false) => {
     setIsLoadingLocation(true);
     setError(null);
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
+      setError('Location access denied. Please ensure you are using a secure (https://) connection.');
       setIsLoadingLocation(false);
       return;
     }
