@@ -8,56 +8,24 @@ const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-
   useEffect(() => {
     if (user?.role === 'Admin') {
       navigate('/admin/dashboard', { replace: true });
     }
   }, [user, navigate]);
 
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
-
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
-    }
-  };
-
-
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navbar */}
       <header className="bg-primary text-white p-4 flex justify-between items-center shadow-md">
         <h1 className="text-xl font-bold">AttendanceSystem</h1>
         <div className="flex items-center gap-4">
-          {deferredPrompt && (
-            <button onClick={handleInstallClick} className="bg-white text-primary px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center gap-1.5">
-              <Download size={16} /> Install App
-            </button>
-          )}
           <span className="font-medium hidden sm:inline">{user?.name}</span>
-          <button onClick={handleLogout} className="text-white hover:text-red-300 transition-colors">
+          <button onClick={handleLogout} className="text-white hover:text-red-300 transition-colors p-2">
             <LogOut size={20} />
           </button>
         </div>

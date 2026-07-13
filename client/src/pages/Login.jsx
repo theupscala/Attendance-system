@@ -103,14 +103,6 @@ const Login = () => {
           <p className="text-gray-500 text-sm">
             Please contact your administrator for an employee account.
           </p>
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-gray-500 text-sm">
-              Setting up a new system?{' '}
-              <Link to="/admin-signup" className="text-accent hover:underline font-medium">
-                Create Admin Account
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>

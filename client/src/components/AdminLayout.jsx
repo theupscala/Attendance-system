@@ -14,15 +14,24 @@ const AdminLayout = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'View all employees', path: '/admin/employees', icon: <Users size={20} /> },
-    { name: 'Mark holiday', path: '/admin/holidays', icon: <Calendar size={20} /> },
-    { name: 'Employee attendance', path: '/admin/attendance', icon: <ClipboardCheck size={20} /> },
+    { name: 'Employees', path: '/admin/employees', icon: <Users size={20} /> },
+    { name: 'Holidays', path: '/admin/holidays', icon: <Calendar size={20} /> },
+    { name: 'Attendance', path: '/admin/attendance', icon: <ClipboardCheck size={20} /> },
   ];
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-xl flex flex-col z-20 shrink-0">
+    <div className="flex h-screen bg-background overflow-hidden flex-col md:flex-row">
+      
+      {/* Mobile Top Header */}
+      <header className="md:hidden bg-primary text-white p-4 flex justify-between items-center shadow-md z-20 shrink-0">
+        <h1 className="text-xl font-bold">Admin Panel</h1>
+        <button onClick={handleLogout} className="text-white hover:text-red-300 transition-colors p-2">
+          <LogOut size={20} />
+        </button>
+      </header>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden w-64 bg-white shadow-xl md:flex flex-col z-20 shrink-0">
         <div className="p-6 bg-primary text-white flex items-center justify-center">
           <h1 className="text-xl font-bold">Admin Panel</h1>
         </div>
@@ -70,10 +79,28 @@ const AdminLayout = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col relative overflow-hidden bg-gray-50">
-        <div className="flex-1 overflow-auto p-4 md:p-8">
+        <div className="flex-1 overflow-auto p-4 pb-24 md:p-8 md:pb-8">
           <Outlet />
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 pb-safe shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.1)] z-40">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) => 
+              `flex flex-col items-center gap-1 p-2 min-w-[64px] rounded-lg transition-colors ${
+                isActive ? 'text-primary font-bold' : 'text-gray-500'
+              }`
+            }
+          >
+            {item.icon}
+            <span className="text-[10px] truncate">{item.name}</span>
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 };

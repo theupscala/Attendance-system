@@ -14,6 +14,7 @@ import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminHolidays from './pages/AdminHolidays';
 import AdminSignup from './pages/AdminSignup';
+import InstallPrompt from './components/InstallPrompt';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
@@ -95,6 +96,7 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <InstallPrompt />
     </Router>
   );
 }

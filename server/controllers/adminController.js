@@ -25,8 +25,8 @@ const removeEmployee = async (req, res) => {
   const user = await User.findById(req.params.id);
   
   if (user) {
-    if (user.role === 'Admin') {
-      return res.status(400).json({ message: 'Cannot remove another Admin' });
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: 'Cannot remove yourself' });
     }
     
     await user.deleteOne();

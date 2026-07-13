@@ -12,11 +12,11 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-primary text-white px-6 py-2 rounded-xl hover:bg-accent transition-all duration-300 shadow-soft font-medium;
+    @apply bg-primary text-white px-6 py-3 md:py-2 rounded-xl hover:bg-accent transition-all duration-300 shadow-soft font-medium min-h-[44px] flex items-center justify-center;
   }
   
   .btn-secondary {
-    @apply bg-white text-primary border border-gray-200 px-6 py-2 rounded-xl hover:bg-gray-50 transition-all duration-300 shadow-sm font-medium;
+    @apply bg-white text-primary border border-gray-200 px-6 py-3 md:py-2 rounded-xl hover:bg-gray-50 transition-all duration-300 shadow-sm font-medium min-h-[44px] flex items-center justify-center;
   }
 
   .card {
@@ -24,6 +24,27 @@
   }
   
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all;
+    @apply w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all min-h-[44px];
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
