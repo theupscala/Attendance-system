@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, MoreHorizontal, Upload, FileText, ChevronLeft, Clock, CheckCircle2, FilePlus, X, Download } from 'lucide-react';
-import { jsPDF } from 'jspdf';
+import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import api from '../services/api';
 
