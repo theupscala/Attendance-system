@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, MoreHorizontal, Upload, FileText, ChevronLeft, Clock, CheckCircle2, FilePlus, X, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 import api from '../services/api';
 
 const numberToWords = (num) => {
@@ -219,7 +219,7 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
 
       const totalDiscounted = items.reduce((sum, item) => sum + (Number(item.discountedPrice) * (item.quantity || 1)), 0);
 
-      autoTable(doc, {
+      doc.autoTable({
         startY: 90,
         head: [['#', 'Item name', 'Quantity', 'Price/ unit', 'Amount']],
         body: tableData,

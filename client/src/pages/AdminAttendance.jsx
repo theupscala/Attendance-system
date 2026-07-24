@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { MapPin, X, Search, Calendar, Download, Pencil, Filter } from 'lucide-react';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 
 const AdminAttendance = () => {
@@ -214,7 +214,7 @@ const AdminAttendance = () => {
     doc.setFontSize(14);
     doc.text("Salary Summary", 14, 80);
     
-    autoTable(doc, {
+    doc.autoTable({
       startY: 85,
       head: [["Description", "Details"]],
       body: [
@@ -235,7 +235,7 @@ const AdminAttendance = () => {
       record.punchOut?.time ? new Date(record.punchOut.time).toLocaleTimeString() : '--:--',
       record.status
     ]);
-    autoTable(doc, {
+    doc.autoTable({
       startY: doc.lastAutoTable.finalY + 20,
       head: [["Date", "Punch In", "Punch Out", "Status"]],
       body: attendanceBody,
