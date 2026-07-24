@@ -6,22 +6,18 @@ const quoteSchema = new mongoose.Schema({
     ref: 'CustomerEntry',
     required: true
   },
-  product: {
-    type: String,
-    required: true
-  },
-  model: {
-    type: String,
-    required: true
-  },
-  mrp: {
-    type: Number,
-    required: true
-  },
-  discountedPrice: {
-    type: Number,
-    required: true
-  },
+  items: [{
+    product: { type: String, required: true },
+    model: { type: String, required: true },
+    quantity: { type: Number, required: true, default: 1 },
+    mrp: { type: Number, required: true },
+    discountedPrice: { type: Number, required: true }
+  }],
+  // Legacy fields (optional)
+  product: { type: String },
+  model: { type: String },
+  mrp: { type: Number },
+  discountedPrice: { type: Number },
   date: {
     type: Date,
     default: Date.now

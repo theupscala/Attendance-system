@@ -29,12 +29,9 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
   // Quote modal state
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [isUploadingBill, setIsUploadingBill] = useState(false);
-  const [quoteForm, setQuoteForm] = useState({
-    product: '',
-    model: '',
-    mrp: '',
-    discountedPrice: ''
-  });
+  const [quoteItems, setQuoteItems] = useState([
+    { product: '', model: '', mrp: '', discountedPrice: '', quantity: 1 }
+  ]);
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
 
   // Followup modal state
@@ -118,11 +115,11 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
     try {
       const { data } = await api.post('/quotes', {
         leadId: lead._id,
-        ...quoteForm
+        items: quoteItems
       });
       alert('Quote generated successfully! The PDF will now download.');
       setIsQuoteModalOpen(false);
-      setQuoteForm({ product: '', model: '', mrp: '', discountedPrice: '' });
+      setQuoteItems([{ product: '', model: '', mrp: '', discountedPrice: '', quantity: 1 }]);
       fetchQuotes();
       fetchFollowups(); // Refresh activities to show the newly created followup
       setActiveTab('Quotes');
@@ -209,9 +206,17 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
     doc.text(customerName, 14, 73);
 
     // Table using autoTable
-    const tableData = [
-      ['1', `${quote.product} - ${quote.model}`, '1', `Rs. ${Number(quote.mrp).toLocaleString()}`, `Rs. ${Number(quote.discountedPrice).toLocaleString()}`]
-    ];
+    const items = quote.items && quote.items.length > 0 ? quote.items : [quote];
+    
+    const tableData = items.map((item, index) => [
+      (index + 1).toString(),
+      `${item.product} - ${item.model}`,
+      item.quantity ? item.quantity.toString() : '1',
+      `Rs. ${Number(item.mrp).toLocaleString()}`,
+      `Rs. ${Number(item.discountedPrice * (item.quantity || 1)).toLocaleString()}`
+    ]);
+
+    const totalDiscounted = items.reduce((sum, item) => sum + (Number(item.discountedPrice) * (item.quantity || 1)), 0);
 
     doc.autoTable({
       startY: 90,
@@ -227,7 +232,7 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
         3: { cellWidth: 35, halign: 'right' },
         4: { cellWidth: 35, halign: 'right' }
       },
-      foot: [['', 'Total', '1', '', `Rs. ${Number(quote.discountedPrice).toLocaleString()}`]],
+      foot: [['', 'Total', items.reduce((sum, item) => sum + Number(item.quantity || 1), 0).toString(), '', `Rs. ${totalDiscounted.toLocaleString()}`]],
       footStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' }
     });
 
@@ -239,23 +244,23 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
     doc.text('Estimate Amount In Words', 14, finalY);
 
     doc.setFont('helvetica', 'normal');
-    const amountInWords = numberToWords(Number(quote.discountedPrice));
+    const amountInWords = numberToWords(totalDiscounted);
     doc.text(amountInWords, 14, finalY + 8);
 
     // Totals section (bottom right)
     doc.setFont('helvetica', 'bold');
     doc.text('Sub Total', 130, finalY);
-    doc.text(`Rs. ${Number(quote.discountedPrice).toLocaleString()}`, 196, finalY, { align: 'right' });
+    doc.text(`Rs. ${totalDiscounted.toLocaleString()}`, 196, finalY, { align: 'right' });
 
     // Red Total Block
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.rect(130, finalY + 4, 66, 8, 'F');
     doc.setTextColor(255, 255, 255);
     doc.text('Total', 132, finalY + 9.5);
-    doc.text(`Rs. ${Number(quote.discountedPrice).toLocaleString()}`, 194, finalY + 9.5, { align: 'right' });
+    doc.text(`Rs. ${totalDiscounted.toLocaleString()}`, 194, finalY + 9.5, { align: 'right' });
 
     const safeName = (lead.name || 'Client').replace(/\s+/g, '_');
-    const safeProduct = (quote.product || 'Product').replace(/\s+/g, '_');
+    const safeProduct = (items[0].product || 'Product').replace(/\s+/g, '_');
     doc.save(`Estimate_${safeName}_${safeProduct}.pdf`);
   };
 
@@ -519,41 +524,49 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {quotes.map(quote => (
-                        <div key={quote._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-primary/30 transition-colors">
-                          <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <FileText size={48} />
-                          </div>
-                          <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-4">
-                              <div>
-                                <h4 className="text-lg font-bold text-gray-900">{quote.product}</h4>
-                                <p className="text-sm font-medium text-gray-500">Model: {quote.model}</p>
-                              </div>
-                              <div className="flex flex-col items-end gap-2">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">{formatDate(quote.date)}</span>
-                                <button
-                                  onClick={() => downloadQuotePDF(quote)}
-                                  className="text-primary hover:text-primary-dark transition-colors bg-primary/10 p-1.5 rounded-md flex items-center gap-1.5"
-                                >
-                                  <Download size={14} /> <span className="text-[10px] font-bold uppercase">PDF</span>
-                                </button>
-                              </div>
+                      {quotes.map(quote => {
+                        const items = quote.items && quote.items.length > 0 ? quote.items : [quote];
+                        const title = items.length > 1 ? `${items[0].product} + ${items.length - 1} more` : items[0].product;
+                        const subTitle = items.length > 1 ? `${items.length} items` : `Model: ${items[0].model}`;
+                        const totalMrp = items.reduce((sum, item) => sum + (Number(item.mrp) * (item.quantity || 1)), 0);
+                        const totalDiscounted = items.reduce((sum, item) => sum + (Number(item.discountedPrice) * (item.quantity || 1)), 0);
+                        
+                        return (
+                          <div key={quote._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-primary/30 transition-colors">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                              <FileText size={48} />
                             </div>
+                            <div className="relative z-10">
+                              <div className="flex justify-between items-start mb-4">
+                                <div>
+                                  <h4 className="text-lg font-bold text-gray-900 truncate max-w-[180px]">{title}</h4>
+                                  <p className="text-sm font-medium text-gray-500">{subTitle}</p>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                  <span className="text-[10px] font-bold text-gray-400 uppercase">{formatDate(quote.date)}</span>
+                                  <button
+                                    onClick={() => downloadQuotePDF(quote)}
+                                    className="text-primary hover:text-primary-dark transition-colors bg-primary/10 p-1.5 rounded-md flex items-center gap-1.5"
+                                  >
+                                    <Download size={14} /> <span className="text-[10px] font-bold uppercase">PDF</span>
+                                  </button>
+                                </div>
+                              </div>
 
-                            <div className="space-y-2 mt-6">
-                              <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                                <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">MRP</span>
-                                <span className="font-bold text-gray-400 line-through">₹{quote.mrp}</span>
-                              </div>
-                              <div className="flex justify-between items-center pt-2">
-                                <span className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Discounted</span>
-                                <span className="text-xl font-black text-emerald-600">₹{quote.discountedPrice}</span>
+                              <div className="space-y-2 mt-6">
+                                <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                                  <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">Total MRP</span>
+                                  <span className="font-bold text-gray-400 line-through">₹{totalMrp.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2">
+                                  <span className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Final Price</span>
+                                  <span className="text-xl font-black text-emerald-600">₹{totalDiscounted.toLocaleString()}</span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -725,60 +738,123 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleQuoteSubmit} className="flex flex-col overflow-hidden">
-              <div className="p-5 space-y-4 overflow-y-auto">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Product <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Washing Machine"
-                    value={quoteForm.product}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, product: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Model <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. WM-2023-X"
-                    value={quoteForm.model}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, model: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">MRP (₹) <span className="text-red-500">*</span></label>
-                    <input
-                      type="number"
-                      required
-                      value={quoteForm.mrp}
-                      onChange={(e) => setQuoteForm({ ...quoteForm, mrp: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
-                    />
+            <form onSubmit={handleQuoteSubmit} className="flex flex-col overflow-hidden max-h-[70vh]">
+              <div className="p-5 space-y-6 overflow-y-auto">
+                {quoteItems.map((item, index) => (
+                  <div key={index} className="relative bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    {quoteItems.length > 1 && (
+                      <button 
+                        type="button" 
+                        onClick={() => setQuoteItems(quoteItems.filter((_, i) => i !== index))}
+                        className="absolute -top-2 -right-2 bg-white text-red-500 hover:bg-red-50 p-1.5 rounded-full shadow-sm border border-gray-100 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">Product {index + 1} <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Washing Machine"
+                          value={item.product}
+                          onChange={(e) => {
+                            const newItems = [...quoteItems];
+                            newItems[index].product = e.target.value;
+                            setQuoteItems(newItems);
+                          }}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">Model <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. WM-2023-X"
+                            value={item.model}
+                            onChange={(e) => {
+                              const newItems = [...quoteItems];
+                              newItems[index].model = e.target.value;
+                              setQuoteItems(newItems);
+                            }}
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">Qty <span className="text-red-500">*</span></label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const newItems = [...quoteItems];
+                              newItems[index].quantity = parseInt(e.target.value) || 1;
+                              setQuoteItems(newItems);
+                            }}
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">MRP (₹) <span className="text-red-500">*</span></label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            value={item.mrp}
+                            onChange={(e) => {
+                              const newItems = [...quoteItems];
+                              newItems[index].mrp = e.target.value;
+                              setQuoteItems(newItems);
+                            }}
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">Discounted/Unit (₹) <span className="text-red-500">*</span></label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            value={item.discountedPrice}
+                            onChange={(e) => {
+                              const newItems = [...quoteItems];
+                              newItems[index].discountedPrice = e.target.value;
+                              setQuoteItems(newItems);
+                            }}
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Discounted (₹) <span className="text-red-500">*</span></label>
-                    <input
-                      type="number"
-                      required
-                      value={quoteForm.discountedPrice}
-                      onChange={(e) => setQuoteForm({ ...quoteForm, discountedPrice: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
-                    />
-                  </div>
-                </div>
+                ))}
+                
+                <button
+                  type="button"
+                  onClick={() => setQuoteItems([...quoteItems, { product: '', model: '', quantity: 1, mrp: '', discountedPrice: '' }])}
+                  className="w-full py-3 border-2 border-dashed border-gray-200 text-gray-500 font-bold text-sm rounded-xl hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+                >
+                  <FilePlus size={16} /> Add Another Product
+                </button>
               </div>
-              <div className="p-4 border-t border-gray-100 flex justify-end gap-3 shrink-0 bg-gray-50/50 rounded-b-2xl">
-                <button type="button" onClick={() => setIsQuoteModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" disabled={isSubmittingQuote} className="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-dark transition-colors disabled:opacity-50">
-                  {isSubmittingQuote ? 'Generating...' : 'Create Quote'}
-                </button>
+              <div className="p-4 border-t border-gray-100 flex justify-between items-center shrink-0 bg-white">
+                <div className="text-sm font-bold text-gray-700">
+                  Total: ₹{quoteItems.reduce((acc, item) => acc + ((Number(item.discountedPrice) || 0) * (item.quantity || 1)), 0).toLocaleString()}
+                </div>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setIsQuoteModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={isSubmittingQuote} className="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-dark transition-colors disabled:opacity-50">
+                    {isSubmittingQuote ? 'Generating...' : 'Create Quote'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
