@@ -894,3 +894,4 @@ const UserPlusIcon = () => (
 )
 
 export default CustomerDetailsDrawer;
+
