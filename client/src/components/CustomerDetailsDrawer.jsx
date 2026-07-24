@@ -154,114 +154,119 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
   };
 
   const downloadQuotePDF = (quote) => {
-    const doc = new jsPDF();
-    const primaryColor = [139, 0, 0]; // Dark Red
-    const textColor = [0, 0, 0];
+    try {
+      const doc = new jsPDF();
+      const primaryColor = [139, 0, 0]; // Dark Red
+      const textColor = [0, 0, 0];
 
-    // Header Left
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('ADYA FURNITURE', 14, 20);
+      // Header Left
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('ADYA FURNITURE', 14, 20);
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Salem By Pass Road, Opposite to Indian Oil Petrol Bunk,RamNagar ', 14, 26);
-    doc.text('Karur  - 639006', 14, 31);
-    doc.text('Phone no.: 9095060024', 14, 36);
-    doc.text('Email: adyaathome@gmail.com', 14, 41);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Salem By Pass Road, Opposite to Indian Oil Petrol Bunk,RamNagar ', 14, 26);
+      doc.text('Karur  - 639006', 14, 31);
+      doc.text('Phone no.: 9095060024', 14, 36);
+      doc.text('Email: adyaathome@gmail.com', 14, 41);
 
-    // Header Right (Logo substitute)
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('ADYA FURNITURE', 196, 25, { align: 'right' });
-    doc.setFontSize(8);
-    doc.setTextColor(0, 0, 0);
-    doc.text('FURNITURE', 196, 30, { align: 'right' });
+      // Header Right (Logo substitute)
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text('ADYA FURNITURE', 196, 25, { align: 'right' });
+      doc.setFontSize(8);
+      doc.setTextColor(0, 0, 0);
+      doc.text('FURNITURE', 196, 30, { align: 'right' });
 
-    // Red Horizontal Line
-    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.setLineWidth(0.5);
-    doc.line(14, 45, 196, 45);
+      // Red Horizontal Line
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.5);
+      doc.line(14, 45, 196, 45);
 
-    // Title 'Estimate'
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('Estimate', 105, 53, { align: 'center' });
+      // Title 'Estimate'
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text('Estimate', 105, 53, { align: 'center' });
 
-    // Customer & Details
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text('Estimate For', 14, 65);
-    doc.text('Estimate Details', 196, 65, { align: 'right' });
+      // Customer & Details
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Estimate For', 14, 65);
+      doc.text('Estimate Details', 196, 65, { align: 'right' });
 
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Estimate No.: ${quote._id.slice(-6).toUpperCase()}`, 196, 73, { align: 'right' });
-    doc.text(`Date: ${formatDate(quote.date)}`, 196, 78, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Estimate No.: ${String(quote._id || '').slice(-6).toUpperCase()}`, 196, 73, { align: 'right' });
+      doc.text(`Date: ${formatDate(quote.date)}`, 196, 78, { align: 'right' });
 
-    doc.setFont('helvetica', 'bold');
-    const customerName = lead.name || 'Unknown Lead';
-    doc.text(customerName, 14, 73);
+      doc.setFont('helvetica', 'bold');
+      const customerName = String(lead.name || 'Unknown Lead');
+      doc.text(customerName, 14, 73);
 
-    // Table using autoTable
-    const items = quote.items && quote.items.length > 0 ? quote.items : [quote];
-    
-    const tableData = items.map((item, index) => [
-      (index + 1).toString(),
-      `${item.product} - ${item.model}`,
-      item.quantity ? item.quantity.toString() : '1',
-      `Rs. ${Number(item.mrp).toLocaleString()}`,
-      `Rs. ${Number(item.discountedPrice * (item.quantity || 1)).toLocaleString()}`
-    ]);
+      // Table using autoTable
+      const items = quote.items && quote.items.length > 0 ? quote.items : [quote];
+      
+      const tableData = items.map((item, index) => [
+        (index + 1).toString(),
+        `${item.product} - ${item.model}`,
+        item.quantity ? item.quantity.toString() : '1',
+        `Rs. ${Number(item.mrp).toLocaleString()}`,
+        `Rs. ${Number(item.discountedPrice * (item.quantity || 1)).toLocaleString()}`
+      ]);
 
-    const totalDiscounted = items.reduce((sum, item) => sum + (Number(item.discountedPrice) * (item.quantity || 1)), 0);
+      const totalDiscounted = items.reduce((sum, item) => sum + (Number(item.discountedPrice) * (item.quantity || 1)), 0);
 
-    doc.autoTable({
-      startY: 90,
-      head: [['#', 'Item name', 'Quantity', 'Price/ unit', 'Amount']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 9, cellPadding: 4, textColor: [0, 0, 0], lineColor: [200, 200, 200] },
-      columnStyles: {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 20, halign: 'center' },
-        3: { cellWidth: 35, halign: 'right' },
-        4: { cellWidth: 35, halign: 'right' }
-      },
-      foot: [['', 'Total', items.reduce((sum, item) => sum + Number(item.quantity || 1), 0).toString(), '', `Rs. ${totalDiscounted.toLocaleString()}`]],
-      footStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' }
-    });
+      doc.autoTable({
+        startY: 90,
+        head: [['#', 'Item name', 'Quantity', 'Price/ unit', 'Amount']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 4, textColor: [0, 0, 0], lineColor: [200, 200, 200] },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          1: { cellWidth: 'auto' },
+          2: { cellWidth: 20, halign: 'center' },
+          3: { cellWidth: 35, halign: 'right' },
+          4: { cellWidth: 35, halign: 'right' }
+        },
+        foot: [['', 'Total', items.reduce((sum, item) => sum + Number(item.quantity || 1), 0).toString(), '', `Rs. ${totalDiscounted.toLocaleString()}`]],
+        footStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' }
+      });
 
-    const finalY = doc.lastAutoTable.finalY + 15;
+      const finalY = doc.lastAutoTable.finalY + 15;
 
-    // Estimate Amount In Words
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Estimate Amount In Words', 14, finalY);
+      // Estimate Amount In Words
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Estimate Amount In Words', 14, finalY);
 
-    doc.setFont('helvetica', 'normal');
-    const amountInWords = numberToWords(totalDiscounted);
-    doc.text(amountInWords, 14, finalY + 8);
+      doc.setFont('helvetica', 'normal');
+      const amountInWords = numberToWords(totalDiscounted);
+      doc.text(amountInWords, 14, finalY + 8);
 
-    // Totals section (bottom right)
-    doc.setFont('helvetica', 'bold');
-    doc.text('Sub Total', 130, finalY);
-    doc.text(`Rs. ${totalDiscounted.toLocaleString()}`, 196, finalY, { align: 'right' });
+      // Totals section (bottom right)
+      doc.setFont('helvetica', 'bold');
+      doc.text('Sub Total', 130, finalY);
+      doc.text(`Rs. ${totalDiscounted.toLocaleString()}`, 196, finalY, { align: 'right' });
 
-    // Red Total Block
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.rect(130, finalY + 4, 66, 8, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.text('Total', 132, finalY + 9.5);
-    doc.text(`Rs. ${totalDiscounted.toLocaleString()}`, 194, finalY + 9.5, { align: 'right' });
+      // Red Total Block
+      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.rect(130, finalY + 4, 66, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text('Total', 132, finalY + 9.5);
+      doc.text(`Rs. ${totalDiscounted.toLocaleString()}`, 194, finalY + 9.5, { align: 'right' });
 
-    const safeName = (lead.name || 'Client').replace(/\s+/g, '_');
-    const safeProduct = (items[0].product || 'Product').replace(/\s+/g, '_');
-    doc.save(`Estimate_${safeName}_${safeProduct}.pdf`);
+      const safeName = String(lead.name || 'Client').replace(/\s+/g, '_');
+      const safeProduct = String(items[0].product || 'Product').replace(/\s+/g, '_');
+      doc.save(`Estimate_${safeName}_${safeProduct}.pdf`);
+    } catch (error) {
+      alert(`Error generating PDF: ${error.message}`);
+      console.error(error);
+    }
   };
 
   if (!isOpen || !lead) return null;
