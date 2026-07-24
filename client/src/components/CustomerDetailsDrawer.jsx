@@ -1,0 +1,768 @@
+import React, { useState, useEffect } from 'react';
+import { Phone, MoreHorizontal, Upload, FileText, ChevronLeft, Clock, CheckCircle2, FilePlus, X, Download } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import api from '../services/api';
+
+const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
+  const [activeTab, setActiveTab] = useState('Details');
+  const [leftTab, setLeftTab] = useState('Activities');
+  const [followups, setFollowups] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+  const [isPhotoViewerOpen, setIsPhotoViewerOpen] = useState(false);
+
+  // Quote modal state
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [isUploadingBill, setIsUploadingBill] = useState(false);
+  const [quoteForm, setQuoteForm] = useState({
+    product: '',
+    model: '',
+    mrp: '',
+    discountedPrice: ''
+  });
+  const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
+
+  // Followup modal state
+  const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
+  const [followupForm, setFollowupForm] = useState({
+    date: '',
+    description: ''
+  });
+  const [isSubmittingFollowup, setIsSubmittingFollowup] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && lead) {
+      fetchFollowups();
+      fetchQuotes();
+    }
+  }, [isOpen, lead]);
+
+  const fetchFollowups = async () => {
+    try {
+      const { data } = await api.get(`/followups/lead/${lead._id}`);
+      setFollowups(data);
+    } catch (error) {
+      console.error('Failed to fetch followups', error);
+    }
+  };
+
+  const fetchQuotes = async () => {
+    try {
+      const { data } = await api.get(`/quotes/lead/${lead._id}`);
+      setQuotes(data);
+    } catch (error) {
+      console.error('Failed to fetch quotes', error);
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    try {
+      const { data } = await api.put(`/customer-entries/${lead._id}/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (onLeadUpdated) onLeadUpdated(data);
+    } catch (error) {
+      console.error('Failed to upload photo', error);
+      alert('Failed to upload photo');
+    }
+  };
+
+  const handleBillUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploadingBill(true);
+    const formData = new FormData();
+    formData.append('bill', file);
+
+    try {
+      const { data } = await api.put(`/customer-entries/${lead._id}/bills`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (onLeadUpdated) onLeadUpdated(data);
+      alert('Bill uploaded successfully!');
+    } catch (error) {
+      console.error('Failed to upload bill', error);
+      alert(error.response?.data?.message || 'Failed to upload bill');
+    } finally {
+      setIsUploadingBill(false);
+      // Reset input
+      e.target.value = '';
+    }
+  };
+
+  const handleQuoteSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmittingQuote(true);
+    try {
+      const { data } = await api.post('/quotes', {
+        leadId: lead._id,
+        ...quoteForm
+      });
+      alert('Quote generated successfully! The PDF will now download.');
+      setIsQuoteModalOpen(false);
+      setQuoteForm({ product: '', model: '', mrp: '', discountedPrice: '' });
+      fetchQuotes();
+      fetchFollowups(); // Refresh activities to show the newly created followup
+      setActiveTab('Quotes');
+
+      // Automatically download the generated PDF
+      downloadQuotePDF(data);
+    } catch (error) {
+      console.error(error);
+      alert('Failed to generate quote.');
+    } finally {
+      setIsSubmittingQuote(false);
+    }
+  };
+
+  const handleFollowupSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmittingFollowup(true);
+    try {
+      await api.post('/followups', {
+        leadId: lead._id,
+        ...followupForm
+      });
+      setIsFollowupModalOpen(false);
+      setFollowupForm({ date: '', description: '' });
+      fetchFollowups(); // Refresh activities and follow-ups list
+    } catch (error) {
+      console.error(error);
+      alert('Failed to add follow-up.');
+    } finally {
+      setIsSubmittingFollowup(false);
+    }
+  };
+
+  const downloadQuotePDF = (quote) => {
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text('ESTIMATION', 105, 20, { align: 'center' });
+
+    doc.setFontSize(16);
+    doc.text('Sri Navaladi Asscociates', 105, 30, { align: 'center' });
+
+    // Date
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Date: ${formatDate(quote.date)}`, 14, 45);
+    doc.text(`Quote Ref: ${quote._id.slice(-6).toUpperCase()}`, 14, 50);
+
+    // Line
+    doc.setDrawColor(200);
+    doc.line(14, 55, 196, 55);
+
+    // Client Details
+    doc.setFontSize(12);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Prepared For:', 14, 65);
+
+    doc.setFontSize(10);
+    doc.setTextColor(80);
+    doc.text(`Name: ${lead.name || 'N/A'}`, 14, 73);
+    doc.text(`Company: ${lead.company || 'N/A'}`, 14, 79);
+    doc.text(`Phone: ${lead.phone || 'N/A'}`, 14, 85);
+    doc.text(`Email: ${lead.email || 'N/A'}`, 14, 91);
+
+    // Line
+    doc.setDrawColor(200);
+    doc.line(14, 100, 196, 100);
+
+    // Product Details
+    doc.setFontSize(12);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Estimation Details:', 14, 110);
+
+    doc.setFontSize(11);
+    doc.setTextColor(80);
+    doc.text(`Product: ${quote.product}`, 14, 120);
+    doc.text(`Model: ${quote.model}`, 14, 127);
+
+    // Pricing
+    doc.setFillColor(248, 250, 252);
+    doc.rect(14, 135, 182, 30, 'F');
+
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text('M.R.P:', 20, 145);
+    doc.text(`Rs. ${quote.mrp}`, 180, 145, { align: 'right' });
+
+    doc.setFontSize(14);
+    doc.setTextColor(16, 185, 129);
+    doc.text('Discounted Price:', 20, 157);
+    doc.text(`Rs. ${quote.discountedPrice}`, 180, 157, { align: 'right' });
+
+    // Footer
+    doc.setFontSize(10);
+    doc.setTextColor(150);
+    doc.text('Thank you for your business!', 105, 280, { align: 'center' });
+
+    const safeName = (lead.name || 'Client').replace(/\s+/g, '_');
+    const safeProduct = (quote.product || 'Product').replace(/\s+/g, '_');
+    doc.save(`Estimation_${safeName}_${safeProduct}.pdf`);
+  };
+
+  if (!isOpen || !lead) return null;
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US');
+  };
+
+  const tabs = ['Details', 'Quotes', 'Follow Ups', 'Bills'];
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 bg-black/20 z-40 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={onClose}
+      />
+
+      {/* Drawer */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full md:w-[90%] max-w-6xl bg-[#f8fafc] shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col overflow-hidden ${isOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+      >
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shrink-0 z-20">
+          <div className="flex items-center gap-2 font-bold text-gray-800">
+             <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full transition-colors -ml-1">
+               <ChevronLeft size={20} />
+             </button>
+             <span className="truncate max-w-[200px]">{lead.name}</span>
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Desktop Flex Container / Mobile Scroll Container */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden w-full relative">
+          
+          {/* Left Sidebar */}
+          <div className="w-full md:w-[300px] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col shrink-0">
+          <div className="p-8 flex flex-col items-center border-b border-gray-100">
+            <div className="relative mb-4 group cursor-pointer">
+              {lead.photo ? (
+                <div className="relative w-24 h-24 rounded-full shadow-lg border-2 border-white overflow-visible">
+                  <img 
+                    src={`${api.defaults.baseURL.replace('/api', '')}${lead.photo}`} 
+                    alt={lead.name} 
+                    className="w-full h-full object-cover rounded-full cursor-pointer"
+                    onClick={() => setIsPhotoViewerOpen(true)}
+                  />
+                  <label className="absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-md border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors z-20" title="Update Photo">
+                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                    <Upload size={14} className="text-gray-600" />
+                  </label>
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-full" onClick={() => setIsPhotoViewerOpen(true)}>
+                     <span className="text-white text-xs font-bold uppercase tracking-wider">View</span>
+                  </div>
+                </div>
+              ) : (
+                <label className="cursor-pointer block relative">
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                  <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex flex-col items-center justify-center text-white text-3xl font-bold shadow-lg overflow-hidden">
+                    <span className="group-hover:opacity-0 transition-opacity">{lead.name?.charAt(0).toUpperCase()}</span>
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                       <Upload size={20} className="text-white mb-1" />
+                       <span className="text-[9px] uppercase font-bold tracking-wider">Upload</span>
+                    </div>
+                  </div>
+                  <div className="absolute top-0 left-0 w-4 h-4 bg-emerald-400 border-2 border-white rounded-full z-10 pointer-events-none"></div>
+                </label>
+              )}
+            </div>
+
+            <h2 className="text-xl font-bold text-gray-900">{lead.name}</h2>
+            <p className="text-sm text-gray-400 font-medium mt-1">Direct Client</p>
+
+            <div className="flex gap-4 mt-6 w-full justify-center">
+              {/* Removed Call Button */}
+
+              {/* More Button */}
+              <button className="flex flex-col items-center gap-2 group">
+                <div className="w-12 h-12 rounded-2xl bg-gray-50 text-gray-600 border border-gray-100 flex items-center justify-center group-hover:-translate-y-1 transition-transform">
+                  <MoreHorizontal size={20} />
+                </div>
+                <span className="text-xs font-bold text-gray-600">More</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex border-b border-gray-100">
+            <button
+              className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider ${leftTab === 'Deal Info' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}
+              onClick={() => setLeftTab('Deal Info')}
+            >
+              Deal Info
+            </button>
+            <button
+              className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider ${leftTab === 'Activities' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}
+              onClick={() => setLeftTab('Activities')}
+            >
+              Activities
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
+            {leftTab === 'Activities' && (
+              <div className="space-y-4">
+                {/* System Activity */}
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-bold text-gray-900 text-sm">System</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">{formatDate(lead.createdAt)}</span>
+                  </div>
+                  <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <p className="font-medium">New Lead Created:</p>
+                    <p className="text-gray-500 mt-1">{lead.serviceInterest || lead.source}</p>
+                  </div>
+                </div>
+
+                {/* Followups */}
+                {followups.map(f => {
+                  const d = new Date(f.date);
+                  const isOverdue = d < new Date() && f.status !== 'DONE';
+                  return (
+                    <div key={f._id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                      {isOverdue && <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>}
+                      {f.status === 'DONE' && <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>}
+
+                      <div className="flex justify-between items-start mb-2 pl-2">
+                        <span className="font-bold text-gray-900 text-sm flex items-center gap-1">
+                          <Clock size={14} className={f.status === 'DONE' ? 'text-emerald-500' : 'text-primary'} />
+                          {d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                        {f.status === 'DONE' && (
+                          <CheckCircle2 size={16} className="text-emerald-500" />
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 bg-blue-50/50 p-3 rounded-lg border border-blue-100 ml-2">
+                        <p className="text-gray-700 font-medium text-xs">{f.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {followups.length === 0 && (
+                  <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
+                    <p className="text-gray-400 font-medium text-xs">No follow-ups recorded yet</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {leftTab === 'Deal Info' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Company</p>
+                  <p className="text-sm font-semibold text-gray-800">{lead.company}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Status</p>
+                  <p className="text-sm font-semibold text-gray-800">{lead.status}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Budget</p>
+                  <p className="text-sm font-semibold text-gray-800">{lead.budget}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Main Content */}
+        <div className="flex-1 flex flex-col bg-white overflow-visible md:overflow-hidden shrink-0">
+          {/* Header */}
+          <div className="px-6 md:px-10 py-6 md:py-8 shrink-0">
+            <div className="hidden md:flex items-center gap-2 text-sm font-bold text-gray-400 mb-6">
+              <button onClick={onClose} className="hover:text-gray-800 flex items-center gap-1 transition-colors">
+                <ChevronLeft size={16} /> Back
+              </button>
+              <span>›</span>
+              <span className="text-gray-300">{lead.name}</span>
+            </div>
+
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <h1 className="text-4xl font-extrabold text-[#1e293b] tracking-tight">{lead.serviceInterest || lead.source || 'SEO'}</h1>
+                <div className="flex items-center gap-4 mt-4 text-sm font-bold text-gray-400">
+                  <span>Created: {formatDate(lead.createdAt)}</span>
+                  <button
+                    onClick={() => setIsQuoteModalOpen(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 border border-primary text-primary rounded-full hover:bg-primary/5 transition-colors"
+                  >
+                    <FilePlus size={14} /> Generate Quote
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-gray-100">
+              {tabs.map(tab => (
+                <button
+                  key={tab}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all border ${
+                    activeTab === tab 
+                      ? 'bg-[#1e293b] text-white border-[#1e293b] shadow-md' 
+                      : 'bg-white text-gray-500 border-gray-200 shadow-sm hover:bg-gray-50'
+                  }`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto p-10 bg-[#f8fafc] m-6 rounded-3xl border border-gray-100 mt-0">
+
+
+            {activeTab === 'Details' && (
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-6">Contact Information</h3>
+                <div className="grid grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-gray-100">
+                  <div>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Email</p>
+                    <p className="font-medium text-gray-800">{lead.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Phone</p>
+                    <p className="font-medium text-gray-800">{lead.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Source</p>
+                    <p className="font-medium text-gray-800">{lead.source}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Priority</p>
+                    <p className="font-medium text-gray-800">{lead.priority}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Attended by</p>
+                    <p className="font-medium text-gray-800">{lead.employeeId?.name || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'Quotes' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Generated Quotations</h3>
+                </div>
+
+                {quotes.length === 0 ? (
+                  <div className="h-48 border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center text-gray-400 bg-white">
+                    <p className="font-bold text-sm uppercase tracking-widest text-gray-400">No Quotes Generated</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {quotes.map(quote => (
+                      <div key={quote._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-primary/30 transition-colors">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                          <FileText size={48} />
+                        </div>
+                        <div className="relative z-10">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h4 className="text-lg font-bold text-gray-900">{quote.product}</h4>
+                              <p className="text-sm font-medium text-gray-500">Model: {quote.model}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase">{formatDate(quote.date)}</span>
+                              <button
+                                onClick={() => downloadQuotePDF(quote)}
+                                className="text-primary hover:text-primary-dark transition-colors bg-primary/10 p-1.5 rounded-md flex items-center gap-1.5"
+                              >
+                                <Download size={14} /> <span className="text-[10px] font-bold uppercase">PDF</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 mt-6">
+                            <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                              <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">MRP</span>
+                              <span className="font-bold text-gray-400 line-through">₹{quote.mrp}</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-2">
+                              <span className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Discounted</span>
+                              <span className="text-xl font-black text-emerald-600">₹{quote.discountedPrice}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'Follow Ups' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Follow-ups</h3>
+                  <button
+                    onClick={() => setIsFollowupModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-bold hover:bg-primary-dark transition-colors shadow-sm"
+                  >
+                    <FilePlus size={16} /> Add Follow-up
+                  </button>
+                </div>
+
+                {followups.length === 0 ? (
+                  <div className="h-48 border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center text-gray-400 bg-white">
+                    <p className="font-bold text-sm uppercase tracking-widest text-gray-400">No Follow-ups Found</p>
+                    <p className="text-xs mt-2">Click the button above to schedule one.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {followups.map(f => {
+                      const d = new Date(f.date);
+                      const isOverdue = d < new Date() && f.status !== 'DONE';
+                      return (
+                        <div key={f._id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+                          {isOverdue && <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500"></div>}
+                          {f.status === 'DONE' && <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>}
+                          
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="font-bold text-gray-900 flex items-center gap-2">
+                              <Clock size={16} className={f.status === 'DONE' ? 'text-emerald-500' : 'text-primary'} />
+                              {d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            </span>
+                            <span className={`px-2.5 py-1 rounded text-[10px] font-extrabold uppercase tracking-wider ${f.status === 'DONE' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
+                              {f.status}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            {f.description}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'Bills' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Previous Bills</h3>
+                  <label className={`flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-bold hover:bg-primary-dark transition-colors shadow-sm cursor-pointer ${isUploadingBill ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleBillUpload} disabled={isUploadingBill} />
+                    <Upload size={16} /> {isUploadingBill ? 'Uploading...' : 'Upload Bill'}
+                  </label>
+                </div>
+
+                {!lead.bills || lead.bills.length === 0 ? (
+                  <div className="h-48 border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center text-gray-400 bg-white">
+                    <p className="font-bold text-sm uppercase tracking-widest text-gray-400">No Bills Uploaded</p>
+                    <p className="text-xs mt-2">Use the upload button to add previous bills.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {lead.bills.map((bill, index) => (
+                      <div key={index} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-colors">
+                        <div className="flex items-center gap-4 overflow-hidden">
+                          <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <FileText size={24} />
+                          </div>
+                          <div className="overflow-hidden">
+                            <p className="font-bold text-gray-900 text-sm truncate">{bill.originalName}</p>
+                            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                              <Clock size={12} /> {formatDate(bill.uploadedAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <a 
+                          href={`${api.defaults.baseURL.replace('/api', '')}${bill.url}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-colors shrink-0"
+                          title="Download/View"
+                        >
+                          <Download size={18} />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab !== 'Details' && activeTab !== 'Quotes' && activeTab !== 'Follow Ups' && activeTab !== 'Bills' && (
+              <div className="h-64 flex flex-col items-center justify-center text-gray-400">
+                <p className="font-bold text-sm uppercase tracking-widest text-gray-400">Content for {activeTab} coming soon</p>
+              </div>
+            )}
+          </div>
+        </div>
+        </div>
+      </div>
+
+      {/* Followup Modal */}
+      {isFollowupModalOpen && (
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[85vh] animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Add Follow-up</h3>
+                <p className="text-sm text-gray-500 mt-1">For {lead.name}</p>
+              </div>
+              <button onClick={() => setIsFollowupModalOpen(false)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleFollowupSubmit} className="flex flex-col overflow-hidden">
+              <div className="p-5 space-y-4 overflow-y-auto">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Date & Time <span className="text-red-500">*</span></label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={followupForm.date}
+                    onChange={(e) => setFollowupForm({ ...followupForm, date: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Description <span className="text-red-500">*</span></label>
+                  <textarea
+                    required
+                    rows="3"
+                    placeholder="e.g. Call to discuss quotation..."
+                    value={followupForm.description}
+                    onChange={(e) => setFollowupForm({ ...followupForm, description: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700 resize-none"
+                  />
+                </div>
+              </div>
+              <div className="p-4 border-t border-gray-100 flex justify-end gap-3 shrink-0 bg-gray-50/50 rounded-b-2xl">
+                <button type="button" onClick={() => setIsFollowupModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={isSubmittingFollowup} className="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-dark transition-colors disabled:opacity-50">
+                  {isSubmittingFollowup ? 'Saving...' : 'Save Follow-up'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quote Modal */}
+      {isQuoteModalOpen && (
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[85vh] overflow-hidden">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Generate Quotation</h3>
+                <p className="text-sm text-gray-500 mt-1">For {lead.name}</p>
+              </div>
+              <button onClick={() => setIsQuoteModalOpen(false)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleQuoteSubmit} className="flex flex-col overflow-hidden">
+              <div className="p-5 space-y-4 overflow-y-auto">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Product <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Washing Machine"
+                    value={quoteForm.product}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, product: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Model <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. WM-2023-X"
+                    value={quoteForm.model}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, model: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">MRP (₹) <span className="text-red-500">*</span></label>
+                    <input
+                      type="number"
+                      required
+                      value={quoteForm.mrp}
+                      onChange={(e) => setQuoteForm({ ...quoteForm, mrp: e.target.value })}
+                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Discounted (₹) <span className="text-red-500">*</span></label>
+                    <input
+                      type="number"
+                      required
+                      value={quoteForm.discountedPrice}
+                      onChange={(e) => setQuoteForm({ ...quoteForm, discountedPrice: e.target.value })}
+                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-gray-100 flex justify-end gap-3 shrink-0 bg-gray-50/50 rounded-b-2xl">
+                <button type="button" onClick={() => setIsQuoteModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={isSubmittingQuote} className="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-dark transition-colors disabled:opacity-50">
+                  {isSubmittingQuote ? 'Generating...' : 'Create Quote'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Photo Viewer Modal */}
+      {isPhotoViewerOpen && lead.photo && (
+        <div className="fixed inset-0 bg-black/90 z-[70] flex flex-col items-center justify-center p-4">
+          <div className="absolute top-4 right-4 flex gap-4">
+            <button onClick={() => setIsPhotoViewerOpen(false)} className="p-2 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+          <img 
+            src={`${api.defaults.baseURL.replace('/api', '')}${lead.photo}`} 
+            alt={lead.name} 
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+          />
+        </div>
+      )}
+    </>
+  );
+};
+
+const UserPlusIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+    <circle cx="9" cy="7" r="4"></circle>
+    <line x1="19" y1="8" x2="19" y2="14"></line>
+    <line x1="22" y1="11" x2="16" y2="11"></line>
+  </svg>
+)
+
+export default CustomerDetailsDrawer;

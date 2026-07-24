@@ -128,6 +128,7 @@ const loginUser = async (req, res) => {
         name: user.name,
         employeeId: user.employeeId,
         role: user.role,
+        salaryType: user.salaryType,
         token: generateToken(user._id),
       });
     }
@@ -161,6 +162,7 @@ const getUserProfile = async (req, res) => {
         shift: user.shift,
         photo: user.photo,
         isFieldWorker: user.isFieldWorker,
+        salaryType: user.salaryType,
       });
     }
 

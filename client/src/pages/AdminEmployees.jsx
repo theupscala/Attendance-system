@@ -95,7 +95,8 @@ const AdminEmployees = () => {
           </div>
         </div>
         <div className="overflow-x-auto flex-1">
-          <table className="w-full text-left">
+          <div className="hidden md:block">
+          <table className="w-full min-w-[800px] text-left">
             <thead>
               <tr className="border-b-2 text-sm text-gray-400 font-bold uppercase tracking-wider">
                 <th className="pb-3 pr-4">Employee</th>
@@ -137,6 +138,45 @@ const AdminEmployees = () => {
               ))}
             </tbody>
           </table>
+          </div>
+          {/* Mobile Card View */}
+          <div className="md:hidden flex flex-col gap-4 p-4">
+            {filteredEmployees.map(emp => (
+              <div key={emp._id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col">
+                    <span className="flex items-center gap-2 font-bold text-gray-800 text-lg">
+                      {emp.name} 
+                      {emp.role === 'Admin' && <span className="w-2.5 h-2.5 rounded-full bg-green-500" title="Admin"></span>}
+                    </span>
+                    <span className="text-xs text-gray-500 font-medium">{emp.employeeId}</span>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 uppercase tracking-wide">
+                    Active
+                  </span>
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-lg flex items-center justify-between">
+                  <span className="text-sm text-gray-600 font-medium">Salary</span>
+                  <div className="flex flex-col items-end">
+                    <span className="font-bold text-gray-800">₹{emp.salary || 0}/hr</span>
+                    <span className={`px-2 py-0.5 mt-1 rounded text-[10px] uppercase font-bold ${emp.salaryType === 'Weekly' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {emp.salaryType || 'Monthly'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => handleRemoveEmployee(emp._id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-danger hover:bg-red-100 rounded-lg transition-colors font-bold text-sm w-full justify-center"
+                  >
+                    <Trash2 size={14} /> Remove Employee
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
           {filteredEmployees.length === 0 && <p className="text-center text-sm text-gray-500 py-12">No employees found matching filters.</p>}
         </div>
       </div>

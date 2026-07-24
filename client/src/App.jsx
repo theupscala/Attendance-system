@@ -14,6 +14,11 @@ import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminHolidays from './pages/AdminHolidays';
 import AdminSignup from './pages/AdminSignup';
+import AdminCustomerEntries from './pages/AdminCustomerEntries';
+import AdminPipeline from './pages/AdminPipeline';
+import AdminFollowups from './pages/AdminFollowups';
+import AdminClients from './pages/AdminClients';
+import AdminReports from './pages/AdminReports';
 import InstallPrompt from './components/InstallPrompt';
 
 const ProtectedRoute = ({ children }) => {
@@ -82,6 +87,11 @@ function App() {
           <Route path="employees" element={<AdminEmployees />} />
           <Route path="attendance" element={<AdminAttendance />} />
           <Route path="holidays" element={<AdminHolidays />} />
+          <Route path="crm" element={<AdminCustomerEntries />} />
+          <Route path="pipeline" element={<AdminPipeline />} />
+          <Route path="follow-ups" element={<AdminFollowups />} />
+          <Route path="clients" element={<AdminClients />} />
+          <Route path="reports" element={<AdminReports />} />
         </Route>
 
         <Route
@@ -89,6 +99,15 @@ function App() {
           element={
             <ProtectedRoute>
               <History />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/leads"
+          element={
+            <ProtectedRoute>
+              <AdminCustomerEntries />
             </ProtectedRoute>
           }
         />

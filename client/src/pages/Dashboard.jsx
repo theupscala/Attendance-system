@@ -1,12 +1,16 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Calendar, Clock, MapPin, User, LogOut, Users, X, Lock, Plus, Download } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, LogOut, Users, X, Lock, Plus, Download, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+
+import CustomerEntryDrawer from '../components/CustomerEntryDrawer';
 
 const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [isCustomerDrawerOpen, setIsCustomerDrawerOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (user?.role === 'Admin') {
@@ -18,6 +22,12 @@ const Dashboard = () => {
     logout();
     navigate('/login');
   };
+
+  const handleSuccess = (msg) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navbar */}
@@ -30,6 +40,14 @@ const Dashboard = () => {
           </button>
         </div>
       </header>
+
+      {successMessage && (
+        <div className="max-w-7xl mx-auto mt-4 px-4">
+          <div className="bg-green-50 text-green-700 p-3 rounded-xl text-center shadow-sm">
+            {successMessage}
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto p-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         
@@ -59,7 +77,7 @@ const Dashboard = () => {
 
         {/* Action Panel */}
         <div className="md:col-span-2 space-y-6">
-          <div className="card flex items-center justify-between p-8 bg-gradient-to-r from-primary to-accent text-white border-0">
+          <div className="card flex flex-col md:flex-row items-start md:items-center justify-between p-6 md:p-8 gap-4 bg-gradient-to-r from-primary to-accent text-white border-0">
             <div>
               <h2 className="text-2xl font-bold mb-1">Ready to start?</h2>
               <p className="text-blue-100">Make sure you are within the office premises.</p>
@@ -69,18 +87,33 @@ const Dashboard = () => {
             </button>
           </div>
 
-          <div className="grid gap-4 grid-cols-1">
+          <div className={`grid gap-4 grid-cols-1 ${user?.salaryType === 'Weekly' ? 'md:grid-cols-1' : 'md:grid-cols-3'}`}>
             <div className="card flex flex-col items-center justify-center p-6 cursor-pointer hover:border-accent transition-colors" onClick={() => navigate('/history')}>
               <Calendar size={32} className="text-accent mb-2" />
               <span className="font-medium">My Attendance</span>
             </div>
+            {user?.salaryType !== 'Weekly' && (
+              <>
+                <div className="card flex flex-col items-center justify-center p-6 cursor-pointer hover:border-accent transition-colors" onClick={() => setIsCustomerDrawerOpen(true)}>
+                  <Plus size={32} className="text-accent mb-2" />
+                  <span className="font-medium">Add Lead</span>
+                </div>
+                <div className="card flex flex-col items-center justify-center p-6 cursor-pointer hover:border-accent transition-colors" onClick={() => navigate('/leads')}>
+                  <ClipboardList size={32} className="text-accent mb-2" />
+                  <span className="font-medium">My Leads</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
       </main>
 
-
-      {/* View Credentials Modal Removed */}
+      <CustomerEntryDrawer 
+        isOpen={isCustomerDrawerOpen} 
+        onClose={() => setIsCustomerDrawerOpen(false)} 
+        onSuccess={handleSuccess}
+      />
 
     </div>
   );

@@ -46,7 +46,7 @@ const History = () => {
             <p>No attendance records found.</p>
           </div>
         ) : (
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-[800px] text-left border-collapse">
             <thead>
               <tr className="border-b text-sm text-gray-500 uppercase tracking-wider font-bold">
                 <th className="pb-3 pr-4">Date</th>

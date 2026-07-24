@@ -16,7 +16,7 @@ const AdminDashboard = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-8">
       <h1 className="text-2xl font-bold text-gray-800">Welcome, {user?.name}</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -43,7 +43,7 @@ const AdminDashboard = () => {
 
         {/* Actions & Quick Stats */}
         <div className="md:col-span-2 space-y-6">
-          <div className="card flex items-center justify-between p-8 bg-gradient-to-r from-primary to-accent text-white border-0 shadow-sm">
+          <div className="card flex flex-col md:flex-row items-start md:items-center justify-between p-6 md:p-8 gap-4 bg-gradient-to-r from-primary to-accent text-white border-0 shadow-sm">
             <div>
               <h2 className="text-2xl font-bold mb-1">Mark Your Attendance</h2>
               <p className="text-blue-100">Keep your own attendance records up to date.</p>

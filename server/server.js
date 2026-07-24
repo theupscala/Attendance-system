@@ -15,16 +15,13 @@ const app = express();
 app.use(helmet({ crossOriginResourcePolicy: false })); // Allow cross-origin images
 app.use(cors({
   origin: [
+    'http://localhost:5173',
     'http://mmk97pouhmxfvfzs62ok2ai9.187.127.182.214.sslip.io',
     'https://mmk97pouhmxfvfzs62ok2ai9.187.127.182.214.sslip.io'
   ],
-  credentials: true
-}));
-
-app.use(cors({
-  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 // Rate Limiting
@@ -48,6 +45,9 @@ app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/employees', require('./routes/employeeRoutes'));
 app.use('/api/leaves', require('./routes/leaveRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/customer-entries', require('./routes/customerEntryRoutes'));
+app.use('/api/followups', require('./routes/followupRoutes'));
+app.use('/api/quotes', require('./routes/quoteRoutes'));
 
 // Default Route
 app.get('/', (req, res) => {
