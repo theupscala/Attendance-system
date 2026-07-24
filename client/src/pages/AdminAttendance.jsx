@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { MapPin, X, Search, Calendar, Download, Pencil, Filter } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import { applyPlugin } from 'jspdf-autotable';
+applyPlugin(jsPDF);
 import { useNavigate } from 'react-router-dom';
 
 const AdminAttendance = () => {

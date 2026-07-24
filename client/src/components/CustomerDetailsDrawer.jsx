@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, MoreHorizontal, Upload, FileText, ChevronLeft, Clock, CheckCircle2, FilePlus, X, Download } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import { applyPlugin } from 'jspdf-autotable';
+applyPlugin(jsPDF);
 import api from '../services/api';
 
 const numberToWords = (num) => {
