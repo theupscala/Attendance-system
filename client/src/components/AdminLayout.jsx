@@ -27,9 +27,14 @@ const AdminLayout = () => {
     { name: 'Attendance', path: '/admin/attendance', icon: <ClipboardCheck size={18} /> },
   ];
 
-  const navItems = user?.salaryType === 'Weekly'
-    ? allNavItems.filter(item => ['Dashboard', 'Attendance'].includes(item.name))
-    : allNavItems;
+  let navItems = allNavItems;
+  if (user?.role !== 'Admin') {
+    if (user?.salaryType === 'Monthly') {
+      navItems = allNavItems.filter(item => item.name !== 'Reports');
+    } else if (user?.salaryType === 'Weekly') {
+      navItems = allNavItems.filter(item => ['Dashboard', 'Attendance'].includes(item.name));
+    }
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden flex-col md:flex-row font-sans">

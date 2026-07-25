@@ -13,7 +13,7 @@ const Dashboard = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
-    if (user?.role === 'Admin') {
+    if (user?.role === 'Admin' || (user?.role === 'Employee' && user?.salaryType === 'Monthly')) {
       navigate('/admin/dashboard', { replace: true });
     }
   }, [user, navigate]);
