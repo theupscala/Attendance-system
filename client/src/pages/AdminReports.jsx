@@ -11,7 +11,7 @@ const AdminReports = () => {
 
   // Filter States
   const [mode, setMode] = useState('PRODUCT'); // 'PRODUCT' | 'EMPLOYEE'
-  const [dataset, setDataset] = useState('LEADS'); // 'LEADS' | 'CLIENTS'
+  const [dataset, setDataset] = useState('ALL'); // 'ALL' | 'LEADS' | 'CLIENTS'
   const [product, setProduct] = useState('ALL');
   const [employeeId, setEmployeeId] = useState('ALL');
   const [timeFilter, setTimeFilter] = useState('1M'); // Default to 1 Month
@@ -61,18 +61,47 @@ const AdminReports = () => {
 
     if (!matchesTime) return false;
 
+    const isClient = entry.status === 'QUALIFIED' || entry.status === 'QUALIFIED LEAD';
+    const matchesDataset = dataset === 'ALL' ? true : (dataset === 'CLIENTS' ? isClient : !isClient);
+
     // 2. Filter by Mode logic
     if (mode === 'PRODUCT') {
-      const isClient = entry.status === 'QUALIFIED' || entry.status === 'QUALIFIED LEAD';
-      const matchesDataset = dataset === 'CLIENTS' ? isClient : !isClient;
       const matchesProduct = product === 'ALL' || entry.serviceInterest === product;
       return matchesDataset && matchesProduct;
     } else {
       // EMPLOYEE mode
       const matchesEmployee = employeeId === 'ALL' || (entry.employeeId && entry.employeeId._id === employeeId);
-      return matchesEmployee;
+      return matchesEmployee && matchesDataset;
     }
   });
+
+  const employeeStats = { leads: 0, clients: 0 };
+  if (mode === 'EMPLOYEE') {
+    entries.forEach(entry => {
+      let matchesTime = true;
+      if (timeFilter !== 'ALL' && entry.createdAt) {
+        const date = new Date(entry.createdAt);
+        const now = new Date();
+        const timeLimit = new Date();
+        
+        if (timeFilter === '1M') timeLimit.setMonth(now.getMonth() - 1);
+        if (timeFilter === '3M') timeLimit.setMonth(now.getMonth() - 3);
+        if (timeFilter === '6M') timeLimit.setMonth(now.getMonth() - 6);
+        if (timeFilter === '1Y') timeLimit.setFullYear(now.getFullYear() - 1);
+        
+        matchesTime = date >= timeLimit;
+      }
+      
+      if (matchesTime) {
+        const matchesEmployee = employeeId === 'ALL' || (entry.employeeId && entry.employeeId._id === employeeId);
+        if (matchesEmployee) {
+          const isClient = entry.status === 'QUALIFIED' || entry.status === 'QUALIFIED LEAD';
+          if (isClient) employeeStats.clients++;
+          else employeeStats.leads++;
+        }
+      }
+    });
+  }
 
   const getPriorityBadge = (priority) => {
     switch (priority) {
@@ -127,6 +156,12 @@ const AdminReports = () => {
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dataset</label>
                 <div className="flex bg-gray-100/50 p-1 rounded-lg">
                   <button 
+                    onClick={() => setDataset('ALL')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${dataset === 'ALL' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    All
+                  </button>
+                  <button 
                     onClick={() => setDataset('LEADS')}
                     className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${dataset === 'LEADS' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
                   >
@@ -172,6 +207,30 @@ const AdminReports = () => {
             </div>
           ) : (
             <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dataset</label>
+                <div className="flex bg-gray-100/50 p-1 rounded-lg">
+                  <button 
+                    onClick={() => setDataset('ALL')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${dataset === 'ALL' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    All
+                  </button>
+                  <button 
+                    onClick={() => setDataset('LEADS')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${dataset === 'LEADS' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Leads
+                  </button>
+                  <button 
+                    onClick={() => setDataset('CLIENTS')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${dataset === 'CLIENTS' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Clients
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Employee</label>
                 <select 
@@ -221,6 +280,24 @@ const AdminReports = () => {
               }
             </p>
           </div>
+          {mode === 'EMPLOYEE' && (
+            <div className="flex gap-4">
+              <div className="bg-blue-50/50 px-4 py-2 border border-blue-100 rounded-xl flex items-center gap-3">
+                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Users size={18} /></div>
+                <div>
+                  <div className="text-[10px] text-blue-500 font-bold uppercase tracking-wider">Leads Added</div>
+                  <div className="text-lg font-bold text-blue-700 leading-tight">{employeeStats.leads}</div>
+                </div>
+              </div>
+              <div className="bg-green-50/50 px-4 py-2 border border-green-100 rounded-xl flex items-center gap-3">
+                <div className="p-2 bg-green-100 text-green-600 rounded-lg"><Briefcase size={18} /></div>
+                <div>
+                  <div className="text-[10px] text-green-500 font-bold uppercase tracking-wider">Moved to Client</div>
+                  <div className="text-lg font-bold text-green-700 leading-tight">{employeeStats.clients}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {error && (
