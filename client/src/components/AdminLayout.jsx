@@ -30,7 +30,9 @@ const AdminLayout = () => {
   let navItems = allNavItems;
   if (user?.role !== 'Admin') {
     if (user?.salaryType === 'Monthly') {
-      navItems = allNavItems.filter(item => item.name !== 'Reports');
+      navItems = allNavItems
+        .filter(item => !['Reports', 'Employees'].includes(item.name))
+        .map(item => item.name === 'Attendance' ? { ...item, path: '/history' } : item);
     } else if (user?.salaryType === 'Weekly') {
       navItems = allNavItems.filter(item => ['Dashboard', 'Attendance'].includes(item.name));
     }
@@ -47,7 +49,7 @@ const AdminLayout = () => {
           </button>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded bg-primary text-white flex items-center justify-center font-bold">A</div>
-            <h1 className="text-xl font-bold tracking-tight">AdminPanel</h1>
+            <h1 className="text-xl font-bold tracking-tight">{user?.role === 'Admin' ? 'AdminPanel' : 'CRM Dashboard'}</h1>
           </div>
         </div>
         <button onClick={handleLogout} className="text-gray-500 hover:text-primary transition-colors p-2">
@@ -67,7 +69,7 @@ const AdminLayout = () => {
       <aside className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 flex flex-col z-50 shrink-0 transform transition-transform duration-300 md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 rounded bg-primary text-white flex items-center justify-center font-bold text-lg">A</div>
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 uppercase">AdminPanel</h1>
+          <h1 className="text-xl font-bold tracking-tight text-gray-900 uppercase">{user?.role === 'Admin' ? 'AdminPanel' : 'CRM Dashboard'}</h1>
         </div>
         
         <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide py-2">
