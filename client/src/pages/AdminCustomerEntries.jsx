@@ -52,13 +52,15 @@ const AdminCustomerEntries = () => {
     }
   };
 
-  const filteredEntries = entries.filter(entry => {
-    const searchLower = (searchTerm || globalSearch).toLowerCase();
-    return entry.name?.toLowerCase().includes(searchLower) ||
-           entry.company?.toLowerCase().includes(searchLower) ||
-           entry.email?.toLowerCase().includes(searchLower) ||
-           entry.phone?.toLowerCase().includes(searchLower);
-  });
+  const filteredEntries = entries
+    .filter(entry => {
+      const searchLower = (searchTerm || globalSearch).toLowerCase();
+      return entry.name?.toLowerCase().includes(searchLower) ||
+             entry.company?.toLowerCase().includes(searchLower) ||
+             entry.email?.toLowerCase().includes(searchLower) ||
+             entry.phone?.toLowerCase().includes(searchLower);
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const getPriorityBadge = (priority) => {
     switch (priority) {
