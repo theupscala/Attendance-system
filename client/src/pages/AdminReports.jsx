@@ -20,7 +20,7 @@ const AdminReports = () => {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isDetailsDrawerOpen, setIsDetailsDrawerOpen] = useState(false);
 
-  const PRODUCT_OPTIONS = ['Washing machine', 'Chimney', 'Fridge', 'Dishwasher', 'Mixxie', 'others'];
+  const PRODUCT_OPTIONS = Array.from(new Set(entries.map(e => e.serviceInterest).filter(Boolean).filter(p => p !== '-')));
 
   useEffect(() => {
     fetchData();
