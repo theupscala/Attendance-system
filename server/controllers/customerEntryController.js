@@ -36,7 +36,8 @@ const createEntry = async (req, res) => {
       serviceInterest: serviceInterest || '-',
       budget: budget || '-',
       priority: priority || 'WARM',
-      photo
+      photo,
+      brand: req.user.brand || 'None'
     });
 
     res.status(201).json(entry);
@@ -52,7 +53,7 @@ const createEntry = async (req, res) => {
 const getEmployeeEntries = async (req, res) => {
   try {
     const entries = await CustomerEntry.find({ employeeId: req.user._id })
-      .populate('employeeId', 'name employeeId department')
+      .populate('employeeId', 'name employeeId department brand')
       .sort({ createdAt: -1 });
     res.json(entries);
   } catch (error) {
@@ -67,7 +68,7 @@ const getEmployeeEntries = async (req, res) => {
 const getAllEntries = async (req, res) => {
   try {
     const entries = await CustomerEntry.find({})
-      .populate('employeeId', 'name employeeId department')
+      .populate('employeeId', 'name employeeId department brand')
       .sort({ createdAt: -1 });
     res.json(entries);
   } catch (error) {

@@ -5,7 +5,7 @@ import { Search, Trash2, Plus, Filter, X } from 'lucide-react';
 const AdminEmployees = () => {
   const [employees, setEmployees] = useState([]);
   const [isCreateEmployeeModalOpen, setIsCreateEmployeeModalOpen] = useState(false);
-  const [newEmployee, setNewEmployee] = useState({ username: '', password: '', role: 'Employee', salary: '', shiftStart: '09:00', shiftEnd: '18:00', salaryType: 'Monthly' });
+  const [newEmployee, setNewEmployee] = useState({ username: '', password: '', role: 'Employee', salary: '', shiftStart: '09:00', shiftEnd: '18:00', salaryType: 'Monthly', brand: 'None' });
   const [isCreatingEmployee, setIsCreatingEmployee] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -47,13 +47,14 @@ const AdminEmployees = () => {
         salary: Number(newEmployee.salary),
         salaryType: newEmployee.salaryType,
         shiftStart: newEmployee.shiftStart,
-        shiftEnd: newEmployee.shiftEnd
+        shiftEnd: newEmployee.shiftEnd,
+        brand: newEmployee.brand
       };
 
       await api.post('/employees', payload);
       const res = await api.get('/admin/employees');
       setEmployees(res.data);
-      setNewEmployee({ username: '', password: '', role: 'Employee', salary: '', shiftStart: '09:00', shiftEnd: '18:00', salaryType: 'Monthly' });
+      setNewEmployee({ username: '', password: '', role: 'Employee', salary: '', shiftStart: '09:00', shiftEnd: '18:00', salaryType: 'Monthly', brand: 'None' });
       alert(`Employee ${newEmployee.username} created successfully!`);
       setIsCreateEmployeeModalOpen(false);
     } catch (err) {
@@ -109,7 +110,7 @@ const AdminEmployees = () => {
               {filteredEmployees.map(emp => (
                 <tr key={emp._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
                   <td className="py-4 pr-4 font-bold text-gray-700 flex flex-col">
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-2" style={{ borderBottom: emp.brand === 'Bosch' ? '2px solid blue' : emp.brand === 'Furniture' ? '2px solid orange' : 'none', paddingBottom: '2px', display: 'inline-flex', width: 'fit-content' }}>
                       {emp.name} 
                       {emp.role === 'Admin' && <span className="w-2.5 h-2.5 rounded-full bg-green-500" title="Admin"></span>}
                     </span>
@@ -145,7 +146,7 @@ const AdminEmployees = () => {
               <div key={emp._id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-4">
                 <div className="flex justify-between items-start">
                   <div className="flex flex-col">
-                    <span className="flex items-center gap-2 font-bold text-gray-800 text-lg">
+                    <span className="flex items-center gap-2 font-bold text-gray-800 text-lg" style={{ borderBottom: emp.brand === 'Bosch' ? '2px solid blue' : emp.brand === 'Furniture' ? '2px solid orange' : 'none', paddingBottom: '2px', display: 'inline-flex', width: 'fit-content' }}>
                       {emp.name} 
                       {emp.role === 'Admin' && <span className="w-2.5 h-2.5 rounded-full bg-green-500" title="Admin"></span>}
                     </span>
@@ -211,6 +212,16 @@ const AdminEmployees = () => {
                   <option value="Weekly">Weekly Salary</option>
                 </select>
               </div>
+              {newEmployee.salaryType === 'Monthly' && (
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                  <select className="input-field w-full" value={newEmployee.brand} onChange={e => setNewEmployee({ ...newEmployee, brand: e.target.value })}>
+                    <option value="None">Select Brand</option>
+                    <option value="Bosch">Bosch</option>
+                    <option value="Furniture">Furniture</option>
+                  </select>
+                </div>
+              )}
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Salary (Hourly)</label>
                 <input type="number" required min="0" step="0.01" className="input-field w-full" value={newEmployee.salary} onChange={e => setNewEmployee({ ...newEmployee, salary: e.target.value })} placeholder="e.g. 15.00" />

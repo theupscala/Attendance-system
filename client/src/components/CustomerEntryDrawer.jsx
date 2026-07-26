@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { X, User, Building, Mail, Phone, CheckCircle } from 'lucide-react';
 import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 
 const CustomerEntryDrawer = ({ isOpen, onClose, onSuccess, onViewClient }) => {
+  const { user } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     name: '',
     company: '',
@@ -274,11 +276,35 @@ const CustomerEntryDrawer = ({ isOpen, onClose, onSuccess, onViewClient }) => {
                       onChange={handleChange}
                       className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all appearance-none text-sm text-gray-700"
                     >
-                      <option value="Washing Machine">Washing Machine</option>
-                      <option value="Fridge">Fridge</option>
-                      <option value="Chimney">Chimney</option>
-                      <option value="Dishwasher">Dishwasher</option>
-                      <option value="Others">Others</option>
+                      {user?.brand === 'Furniture' ? (
+                        <>
+                          <option value="Cot">Cot</option>
+                          <option value="Mattress">Mattress</option>
+                          <option value="Dinning Table">Dinning Table</option>
+                          <option value="Office Table">Office Table</option>
+                          <option value="Sofas">Sofas</option>
+                          <option value="cupboard">Cupboard</option>
+                          <option value="Others">Others</option>
+                        </>
+                      ) : user?.brand === 'Bosch' ? (
+                        <>
+                          <option value="Frontload Washing Machine">Frontload Washing Machine</option>
+                          <option value="Topload washing machine">Topload Washing Machine</option>
+                          <option value="Fridge">Fridge</option>
+                          <option value="Dishwasher">Dishwasher</option>
+                          <option value="Mixxie">Mixxie</option>
+                          <option value="Chimney">Chimney</option>
+                          <option value="Others">Others</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="Washing Machine">Washing Machine</option>
+                          <option value="Fridge">Fridge</option>
+                          <option value="Chimney">Chimney</option>
+                          <option value="Dishwasher">Dishwasher</option>
+                          <option value="Others">Others</option>
+                        </>
+                      )}
                     </select>
                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>

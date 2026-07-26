@@ -4,7 +4,7 @@ const User = require('../models/User');
 // @route   POST /api/employees
 // @access  Private/Admin
 const createEmployee = async (req, res) => {
-  const { name, employeeId, password, role, department, shift, isFieldWorker, salary, shiftStart, shiftEnd, salaryType } = req.body;
+  const { name, employeeId, password, role, department, shift, isFieldWorker, salary, shiftStart, shiftEnd, salaryType, brand } = req.body;
 
   const userExists = await User.findOne({ employeeId });
   if (userExists) {
@@ -23,7 +23,8 @@ const createEmployee = async (req, res) => {
     salary: salary || 0,
     salaryType: salaryType || 'Monthly',
     shiftStart: shiftStart || '09:00',
-    shiftEnd: shiftEnd || '18:00'
+    shiftEnd: shiftEnd || '18:00',
+    brand: brand || 'None'
   });
 
   if (user) {
@@ -36,6 +37,7 @@ const createEmployee = async (req, res) => {
       salaryType: user.salaryType,
       shiftStart: user.shiftStart,
       shiftEnd: user.shiftEnd,
+      brand: user.brand,
     });
   } else {
     res.status(400).json({ message: 'Invalid employee data' });
@@ -59,6 +61,7 @@ const updateEmployee = async (req, res) => {
     if (req.body.salaryType !== undefined) user.salaryType = req.body.salaryType;
     if (req.body.shiftStart !== undefined) user.shiftStart = req.body.shiftStart;
     if (req.body.shiftEnd !== undefined) user.shiftEnd = req.body.shiftEnd;
+    if (req.body.brand !== undefined) user.brand = req.body.brand;
 
     if (req.body.password) {
       user.password = req.body.password;
@@ -74,7 +77,8 @@ const updateEmployee = async (req, res) => {
       salary: updatedUser.salary,
       salaryType: updatedUser.salaryType,
       shiftStart: updatedUser.shiftStart,
-      shiftEnd: updatedUser.shiftEnd
+      shiftEnd: updatedUser.shiftEnd,
+      brand: updatedUser.brand
     });
   } else {
     res.status(404).json({ message: 'User not found' });

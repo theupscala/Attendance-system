@@ -54,7 +54,12 @@ const customerEntrySchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  brand: {
+    type: String,
+    enum: ['Bosch', 'Furniture', 'None'],
+    default: 'None'
+  }
 }, {
   timestamps: true
 });

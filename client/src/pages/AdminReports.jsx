@@ -354,7 +354,7 @@ const AdminReports = () => {
                         <div className="w-6 h-6 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
                           {entry.employeeId?.name?.charAt(0) || '?'}
                         </div>
-                        <span className="text-xs font-medium text-gray-700">
+                        <span className="text-xs font-medium text-gray-700" style={{ borderBottom: entry.employeeId?.brand === 'Bosch' ? '2px solid blue' : entry.employeeId?.brand === 'Furniture' ? '2px solid orange' : 'none', paddingBottom: '2px', display: 'inline-block' }}>
                           {entry.employeeId?.name || 'Unknown'}
                         </span>
                       </div>
@@ -412,7 +412,7 @@ const AdminReports = () => {
                         <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
                           {entry.employeeId?.name?.charAt(0) || '?'}
                         </div>
-                        <span className="font-medium">{entry.employeeId?.name || 'Unknown'}</span>
+                        <span className="font-medium" style={{ borderBottom: entry.employeeId?.brand === 'Bosch' ? '2px solid blue' : entry.employeeId?.brand === 'Furniture' ? '2px solid orange' : 'none', paddingBottom: '2px', display: 'inline-block' }}>{entry.employeeId?.name || 'Unknown'}</span>
                       </div>
                     </div>
                   </div>
