@@ -21,6 +21,9 @@ const quoteSchema = new mongoose.Schema({
   date: {
     type: Date,
     default: Date.now
+  },
+  customerAddress: {
+    type: String
   }
 }, {
   timestamps: true

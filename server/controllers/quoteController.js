@@ -6,7 +6,7 @@ const Followup = require('../models/Followup');
 // @access  Private
 const createQuote = async (req, res) => {
   try {
-    const { leadId, items, product, model, mrp, discountedPrice } = req.body;
+    const { leadId, items, product, model, mrp, discountedPrice, customerAddress } = req.body;
 
     if (!leadId) {
       return res.status(400).json({ message: 'Lead ID is required' });
@@ -29,7 +29,8 @@ const createQuote = async (req, res) => {
       product: quoteItems[0].product,
       model: quoteItems[0].model,
       mrp: quoteItems[0].mrp,
-      discountedPrice: quoteItems[0].discountedPrice
+      discountedPrice: quoteItems[0].discountedPrice,
+      customerAddress
     });
 
     // Automatically generate a followup for this quote

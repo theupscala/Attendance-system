@@ -33,6 +33,7 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
   const [quoteItems, setQuoteItems] = useState([
     { product: '', model: '', mrp: '', discountedPrice: '', quantity: 1 }
   ]);
+  const [customerAddress, setCustomerAddress] = useState('');
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
 
   // Followup modal state
@@ -116,11 +117,13 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
     try {
       const { data } = await api.post('/quotes', {
         leadId: lead._id,
-        items: quoteItems
+        items: quoteItems,
+        customerAddress: customerAddress
       });
       alert('Quote generated successfully! The PDF will now download.');
       setIsQuoteModalOpen(false);
       setQuoteItems([{ product: '', model: '', mrp: '', discountedPrice: '', quantity: 1 }]);
+      setCustomerAddress('');
       fetchQuotes();
       fetchFollowups(); // Refresh activities to show the newly created followup
       setActiveTab('Quotes');
@@ -218,6 +221,18 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
       doc.setFont('helvetica', 'bold');
       const customerName = String(lead.name || 'Unknown Lead');
       doc.text(customerName, 14, 73);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      if (quote.customerAddress) {
+        // Handle address wrapping if too long
+        const splitAddress = doc.splitTextToSize(quote.customerAddress, 80);
+        doc.text(splitAddress, 14, 78);
+        const addressHeight = splitAddress.length * 4;
+        doc.text(`Phone: ${lead.phone || 'N/A'}`, 14, 78 + addressHeight);
+      } else {
+        doc.text(`Phone: ${lead.phone || 'N/A'}`, 14, 78);
+      }
 
       // Table using autoTable
       const items = quote.items && quote.items.length > 0 ? quote.items : [quote];
@@ -758,6 +773,16 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
             </div>
             <form onSubmit={handleQuoteSubmit} className="flex flex-col overflow-hidden max-h-[70vh]">
               <div className="p-5 space-y-6 overflow-y-auto">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Customer Address <span className="text-gray-400 font-normal">(Optional)</span></label>
+                  <textarea
+                    rows="2"
+                    placeholder="Enter customer address for quotation..."
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-gray-700 resize-none"
+                  />
+                </div>
                 {quoteItems.map((item, index) => (
                   <div key={index} className="relative bg-gray-50 p-4 rounded-xl border border-gray-100">
                     {quoteItems.length > 1 && (
