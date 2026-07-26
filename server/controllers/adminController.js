@@ -6,7 +6,11 @@ const AuditLog = require('../models/AuditLog');
 // @route   GET /api/admin/employees
 // @access  Private/Admin
 const getEmployees = async (req, res) => {
-  const users = await User.find({}).select('-password');
+  let query = {};
+  if (req.user.role !== 'Admin') {
+    query.brand = req.user.brand;
+  }
+  const users = await User.find(query).select('-password');
   res.json(users);
 };
 

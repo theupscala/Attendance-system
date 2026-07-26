@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Phone, CalendarPlus, X, Trash2 } from 'lucide-react';
 import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 import CustomerEntryDrawer from '../components/CustomerEntryDrawer';
 import CustomerDetailsDrawer from '../components/CustomerDetailsDrawer';
 
@@ -20,6 +21,7 @@ const AdminPipeline = () => {
   const [isDetailsDrawerOpen, setIsDetailsDrawerOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const pendingDropRef = React.useRef(null);
+  const { user } = React.useContext(AuthContext);
 
   // Follow-up modal state
   const [followupModalLead, setFollowupModalLead] = useState(null);
@@ -33,7 +35,8 @@ const AdminPipeline = () => {
 
   const fetchEntries = async () => {
     try {
-      const { data } = await api.get('/customer-entries/all');
+      const endpoint = user?.role === 'Admin' ? '/customer-entries/all' : '/customer-entries';
+      const { data } = await api.get(endpoint);
       setEntries(data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch customer entries');

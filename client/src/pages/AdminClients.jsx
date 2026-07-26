@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, SlidersHorizontal, Plus, Eye, Edit2, Phone, Mail, Trash2 } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 import CustomerEntryDrawer from '../components/CustomerEntryDrawer';
 import CustomerDetailsDrawer from '../components/CustomerDetailsDrawer';
 
@@ -15,6 +16,7 @@ const AdminClients = () => {
   const [selectedLead, setSelectedLead] = useState(null);
   const outletContext = useOutletContext();
   const globalSearch = outletContext?.globalSearch || '';
+  const { user } = React.useContext(AuthContext);
 
   useEffect(() => {
     fetchEntries();
@@ -22,7 +24,8 @@ const AdminClients = () => {
 
   const fetchEntries = async () => {
     try {
-      const { data } = await api.get('/customer-entries/all');
+      const endpoint = user?.role === 'Admin' ? '/customer-entries/all' : '/customer-entries';
+      const { data } = await api.get(endpoint);
       // Only keep qualified clients
       const clients = data.filter(entry => 
         entry.status === 'QUALIFIED' || entry.status === 'QUALIFIED LEAD'

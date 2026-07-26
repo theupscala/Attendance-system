@@ -67,7 +67,11 @@ const getEmployeeEntries = async (req, res) => {
 // @access  Private/Admin
 const getAllEntries = async (req, res) => {
   try {
-    const entries = await CustomerEntry.find({})
+    let query = {};
+    if (req.user.role !== 'Admin') {
+      query.brand = req.user.brand;
+    }
+    const entries = await CustomerEntry.find(query)
       .populate('employeeId', 'name employeeId department brand')
       .sort({ createdAt: -1 });
     res.json(entries);
