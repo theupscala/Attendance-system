@@ -29,7 +29,15 @@ const createFollowup = async (req, res) => {
 // @access  Private/Admin
 const getAllFollowups = async (req, res) => {
   try {
-    const followups = await Followup.find({})
+    let matchQuery = {};
+    if (req.user.role !== 'Admin') {
+      const CustomerEntry = require('../models/CustomerEntry');
+      const leads = await CustomerEntry.find({ brand: req.user.brand }, '_id');
+      const leadIds = leads.map(l => l._id);
+      matchQuery.leadId = { $in: leadIds };
+    }
+
+    const followups = await Followup.find(matchQuery)
       .populate('leadId', 'name company email phone status source priority')
       .sort({ date: 1 }); // Sort by upcoming
     res.json(followups);
