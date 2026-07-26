@@ -157,30 +157,42 @@ const CustomerDetailsDrawer = ({ isOpen, onClose, lead, onLeadUpdated }) => {
   const downloadQuotePDF = (quote) => {
     try {
       const doc = new jsPDF();
-      const primaryColor = [139, 0, 0]; // Dark Red
+      
+      const isBosch = lead?.employeeId?.brand === 'Bosch';
+      
+      const primaryColor = isBosch ? [0, 0, 128] : [139, 0, 0]; // Navy Blue or Dark Red
+      const companyName = isBosch ? 'SRI NAVALADI ASSOCIATES' : 'ADYA FURNITURE';
+      const addressLine1 = isBosch ? 'Trichy,Dindigul,karur' : 'Salem By Pass Road, Opposite to Indian Oil Petrol Bunk,RamNagar ';
+      const addressLine2 = isBosch ? '' : 'Karur  - 639006';
+      const phone = isBosch ? '9750990024,9842320024' : '9095060024';
+      const email = isBosch ? 'srinavaladiassociates@gmail.com' : 'adyaathome@gmail.com';
+      const rightSubText = isBosch ? 'HOME APPLIANCES' : 'FURNITURE';
+
       const textColor = [0, 0, 0];
 
       // Header Left
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text('ADYA FURNITURE', 14, 20);
+      doc.text(companyName, 14, 20);
 
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text('Salem By Pass Road, Opposite to Indian Oil Petrol Bunk,RamNagar ', 14, 26);
-      doc.text('Karur  - 639006', 14, 31);
-      doc.text('Phone no.: 9095060024', 14, 36);
-      doc.text('Email: adyaathome@gmail.com', 14, 41);
+      doc.text(addressLine1, 14, 26);
+      if (addressLine2) doc.text(addressLine2, 14, 31);
+      const phoneY = addressLine2 ? 36 : 31;
+      const emailY = addressLine2 ? 41 : 36;
+      doc.text(`Phone no.: ${phone}`, 14, phoneY);
+      doc.text(`Email: ${email}`, 14, emailY);
 
       // Header Right (Logo substitute)
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text('ADYA FURNITURE', 196, 25, { align: 'right' });
+      doc.text(companyName, 196, 25, { align: 'right' });
       doc.setFontSize(8);
       doc.setTextColor(0, 0, 0);
-      doc.text('FURNITURE', 196, 30, { align: 'right' });
+      doc.text(rightSubText, 196, 30, { align: 'right' });
 
       // Red Horizontal Line
       doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
