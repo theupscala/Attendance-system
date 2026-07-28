@@ -114,41 +114,6 @@ const AdminDashboard = () => {
               <p className="text-gray-600 font-medium mt-1">Current<br/>Month</p>
             </div>
 
-            <div className="card border-0 shadow-sm bg-gradient-to-br from-indigo-50 to-indigo-100 flex flex-col justify-center items-center p-8 relative overflow-hidden text-center">
-              <ClipboardList size={40} className="text-indigo-500 mb-3" />
-              <h3 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
-                {totalBoschLeads}
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" title="Total Bosch Leads"></span>
-              </h3>
-              <p className="text-gray-600 font-medium mt-1 leading-tight">Total Bosch<br/>Leads</p>
-            </div>
-
-            <div className="card border-0 shadow-sm bg-gradient-to-br from-orange-50 to-orange-100 flex flex-col justify-center items-center p-8 relative overflow-hidden text-center">
-              <ClipboardList size={40} className="text-orange-500 mb-3" />
-              <h3 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
-                {totalFurnitureLeads}
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500" title="Total Furniture Leads"></span>
-              </h3>
-              <p className="text-gray-600 font-medium mt-1 leading-tight">Total Furniture<br/>Leads</p>
-            </div>
-
-            <div className="card border-0 shadow-sm bg-gradient-to-br from-cyan-50 to-cyan-100 flex flex-col justify-center items-center p-8 relative overflow-hidden text-center">
-              <Footprints size={40} className="text-cyan-500 mb-3" />
-              <h3 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
-                {boschWalkins}
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" title="Bosch Walk-ins"></span>
-              </h3>
-              <p className="text-gray-600 font-medium mt-1 leading-tight">Bosch<br/>Walk-ins</p>
-            </div>
-
-            <div className="card border-0 shadow-sm bg-gradient-to-br from-rose-50 to-rose-100 flex flex-col justify-center items-center p-8 relative overflow-hidden text-center">
-              <Footprints size={40} className="text-rose-500 mb-3" />
-              <h3 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
-                {furnitureWalkins}
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500" title="Furniture Walk-ins"></span>
-              </h3>
-              <p className="text-gray-600 font-medium mt-1 leading-tight">Furniture<br/>Walk-ins</p>
-            </div>
           </div>
         </div>
       </div>
