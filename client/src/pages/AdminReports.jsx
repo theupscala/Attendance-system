@@ -331,7 +331,10 @@ const AdminReports = () => {
                           {entry.name?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div>
-                          <div className="font-medium text-gray-800">{entry.name}</div>
+                          <div className="font-medium text-gray-800 flex items-center gap-2">
+                            {entry.name}
+                            {entry.brand === 'Bosch' && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" title="Bosch Lead"></span>}
+                          </div>
                           <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                             <Phone size={10} /> {entry.phone}
                           </div>
@@ -386,7 +389,10 @@ const AdminReports = () => {
                         {entry.name?.charAt(0).toUpperCase() || 'U'}
                       </div>
                       <div className="overflow-hidden">
-                        <h3 className="font-bold text-gray-900 text-base truncate">{entry.name}</h3>
+                        <h3 className="font-bold text-gray-900 text-base flex items-center gap-2 truncate">
+                          {entry.name}
+                          {entry.brand === 'Bosch' && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" title="Bosch Lead"></span>}
+                        </h3>
                         <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                           <Phone size={12} /> {entry.phone}
                         </p>
