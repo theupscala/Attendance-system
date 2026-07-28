@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { User, Users, Calendar, Footprints } from 'lucide-react';
+import { User, Users, Calendar, Footprints, ClipboardList } from 'lucide-react';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,6 +9,8 @@ const AdminDashboard = () => {
   const [employees, setEmployees] = useState([]);
   const [boschWalkins, setBoschWalkins] = useState(0);
   const [furnitureWalkins, setFurnitureWalkins] = useState(0);
+  const [totalBoschLeads, setTotalBoschLeads] = useState(0);
+  const [totalFurnitureLeads, setTotalFurnitureLeads] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,21 +27,35 @@ const AdminDashboard = () => {
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
         
-        let bosch = 0;
-        let furniture = 0;
+        let boschWalkinsCount = 0;
+        let furnitureWalkinsCount = 0;
+        let totalBosch = 0;
+        let totalFurniture = 0;
         
         leadsRes.data.forEach(lead => {
-          if (lead.createdAt && lead.source?.toUpperCase() === 'WALK-IN') {
-            const date = new Date(lead.createdAt);
-            if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
-              if (lead.brand === 'Bosch') bosch++;
-              else if (lead.brand === 'Furniture') furniture++;
-            }
+          if (lead.brand === 'Bosch') {
+             totalBosch++;
+             if (lead.createdAt && lead.source?.toUpperCase() === 'WALK-IN') {
+               const date = new Date(lead.createdAt);
+               if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+                 boschWalkinsCount++;
+               }
+             }
+          } else if (lead.brand === 'Furniture') {
+             totalFurniture++;
+             if (lead.createdAt && lead.source?.toUpperCase() === 'WALK-IN') {
+               const date = new Date(lead.createdAt);
+               if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+                 furnitureWalkinsCount++;
+               }
+             }
           }
         });
         
-        setBoschWalkins(bosch);
-        setFurnitureWalkins(furniture);
+        setBoschWalkins(boschWalkinsCount);
+        setFurnitureWalkins(furnitureWalkinsCount);
+        setTotalBoschLeads(totalBosch);
+        setTotalFurnitureLeads(totalFurniture);
       } catch (err) {
         console.error('Failed to fetch dashboard data', err);
       }
@@ -85,7 +101,7 @@ const AdminDashboard = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="card border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 flex flex-col justify-center items-center p-8 text-center">
               <Users size={40} className="text-blue-500 mb-3" />
               <h3 className="text-4xl font-bold text-gray-800">{employees.length}</h3>
@@ -99,7 +115,25 @@ const AdminDashboard = () => {
             </div>
 
             <div className="card border-0 shadow-sm bg-gradient-to-br from-indigo-50 to-indigo-100 flex flex-col justify-center items-center p-8 relative overflow-hidden text-center">
-              <Footprints size={40} className="text-indigo-500 mb-3" />
+              <ClipboardList size={40} className="text-indigo-500 mb-3" />
+              <h3 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
+                {totalBoschLeads}
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" title="Total Bosch Leads"></span>
+              </h3>
+              <p className="text-gray-600 font-medium mt-1 leading-tight">Total Bosch<br/>Leads</p>
+            </div>
+
+            <div className="card border-0 shadow-sm bg-gradient-to-br from-orange-50 to-orange-100 flex flex-col justify-center items-center p-8 relative overflow-hidden text-center">
+              <ClipboardList size={40} className="text-orange-500 mb-3" />
+              <h3 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
+                {totalFurnitureLeads}
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" title="Total Furniture Leads"></span>
+              </h3>
+              <p className="text-gray-600 font-medium mt-1 leading-tight">Total Furniture<br/>Leads</p>
+            </div>
+
+            <div className="card border-0 shadow-sm bg-gradient-to-br from-cyan-50 to-cyan-100 flex flex-col justify-center items-center p-8 relative overflow-hidden text-center">
+              <Footprints size={40} className="text-cyan-500 mb-3" />
               <h3 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
                 {boschWalkins}
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500" title="Bosch Walk-ins"></span>
@@ -107,8 +141,8 @@ const AdminDashboard = () => {
               <p className="text-gray-600 font-medium mt-1 leading-tight">Bosch<br/>Walk-ins</p>
             </div>
 
-            <div className="card border-0 shadow-sm bg-gradient-to-br from-orange-50 to-orange-100 flex flex-col justify-center items-center p-8 relative overflow-hidden text-center">
-              <Footprints size={40} className="text-orange-500 mb-3" />
+            <div className="card border-0 shadow-sm bg-gradient-to-br from-rose-50 to-rose-100 flex flex-col justify-center items-center p-8 relative overflow-hidden text-center">
+              <Footprints size={40} className="text-rose-500 mb-3" />
               <h3 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
                 {furnitureWalkins}
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500" title="Furniture Walk-ins"></span>
