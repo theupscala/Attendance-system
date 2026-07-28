@@ -282,7 +282,10 @@ const AdminPipeline = () => {
                             <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 shadow-sm">
                               {lead.name?.charAt(0).toUpperCase()}
                             </div>
-                            <h4 className="font-bold text-gray-900 text-sm">{lead.name}</h4>
+                            <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                              {lead.name}
+                              {lead.brand === 'Bosch' && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" title="Bosch Lead"></span>}
+                            </h4>
                           </div>
 
                           <div className="flex items-center justify-between text-xs mt-4">

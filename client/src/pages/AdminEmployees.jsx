@@ -112,6 +112,8 @@ const AdminEmployees = () => {
                   <td className="py-4 pr-4 font-bold text-gray-700 flex flex-col">
                     <span className="flex items-center gap-2" style={{ borderBottom: emp.brand === 'Bosch' ? '2px solid blue' : emp.brand === 'Furniture' ? '2px solid orange' : 'none', paddingBottom: '2px', display: 'inline-flex', width: 'fit-content' }}>
                       {emp.name} 
+                      {emp.brand === 'Bosch' && <span className="w-2.5 h-2.5 rounded-full bg-blue-500" title="Bosch Employee"></span>}
+                      {emp.brand === 'Furniture' && <span className="w-2.5 h-2.5 rounded-full bg-red-500" title="Furniture Employee"></span>}
                       {emp.role === 'Admin' && <span className="w-2.5 h-2.5 rounded-full bg-green-500" title="Admin"></span>}
                     </span>
                     <span className="text-xs text-gray-500 font-medium">{emp.employeeId}</span>
@@ -148,6 +150,8 @@ const AdminEmployees = () => {
                   <div className="flex flex-col">
                     <span className="flex items-center gap-2 font-bold text-gray-800 text-lg" style={{ borderBottom: emp.brand === 'Bosch' ? '2px solid blue' : emp.brand === 'Furniture' ? '2px solid orange' : 'none', paddingBottom: '2px', display: 'inline-flex', width: 'fit-content' }}>
                       {emp.name} 
+                      {emp.brand === 'Bosch' && <span className="w-2.5 h-2.5 rounded-full bg-blue-500" title="Bosch Employee"></span>}
+                      {emp.brand === 'Furniture' && <span className="w-2.5 h-2.5 rounded-full bg-red-500" title="Furniture Employee"></span>}
                       {emp.role === 'Admin' && <span className="w-2.5 h-2.5 rounded-full bg-green-500" title="Admin"></span>}
                     </span>
                     <span className="text-xs text-gray-500 font-medium">{emp.employeeId}</span>

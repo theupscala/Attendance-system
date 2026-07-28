@@ -122,7 +122,10 @@ const AdminClients = () => {
                     <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-xs font-bold text-emerald-600">
                       {entry.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
-                    <span className="font-medium text-gray-800">{entry.name}</span>
+                    <span className="font-medium text-gray-800 flex items-center gap-2">
+                      {entry.name}
+                      {entry.brand === 'Bosch' && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" title="Bosch Lead"></span>}
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-gray-500">
@@ -182,7 +185,10 @@ const AdminClients = () => {
                     {entry.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <div className="overflow-hidden">
-                    <span className="font-bold text-[#1e293b] block truncate">{entry.name}</span>
+                    <span className="font-bold text-[#1e293b] flex items-center gap-2 truncate">
+                      {entry.name}
+                      {entry.brand === 'Bosch' && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" title="Bosch Lead"></span>}
+                    </span>
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate block">{entry.company || '-'}</span>
                   </div>
                 </div>

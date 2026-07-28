@@ -170,7 +170,10 @@ const AdminFollowups = () => {
                               {lead.name?.charAt(0).toUpperCase() || 'U'}
                             </div>
                             <div>
-                              <span className="font-bold text-[#1e293b] block">{lead.name || 'Unknown Lead'}</span>
+                              <span className="font-bold text-[#1e293b] flex items-center gap-2">
+                                {lead.name || 'Unknown Lead'}
+                                {lead.brand === 'Bosch' && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" title="Bosch Lead"></span>}
+                              </span>
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{lead.serviceInterest || 'SEO'}</span>
                             </div>
                           </div>
@@ -263,7 +266,10 @@ const AdminFollowups = () => {
                           {lead.name?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div>
-                          <span className="font-bold text-[#1e293b] block">{lead.name || 'Unknown Lead'}</span>
+                          <span className="font-bold text-[#1e293b] flex items-center gap-2">
+                            {lead.name || 'Unknown Lead'}
+                            {lead.brand === 'Bosch' && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" title="Bosch Lead"></span>}
+                          </span>
                           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{lead.serviceInterest || 'SEO'}</span>
                         </div>
                       </div>

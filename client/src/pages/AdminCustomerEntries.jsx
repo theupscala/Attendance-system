@@ -138,7 +138,10 @@ const AdminCustomerEntries = () => {
                     <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
                       {entry.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
-                    <span className="font-medium text-gray-800">{entry.name}</span>
+                    <span className="font-medium text-gray-800 flex items-center gap-2">
+                      {entry.name}
+                      {entry.brand === 'Bosch' && <span className="w-2 h-2 rounded-full bg-blue-500" title="Bosch Lead"></span>}
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-gray-500">
@@ -211,7 +214,10 @@ const AdminCustomerEntries = () => {
                   {entry.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-base">{entry.name}</h3>
+                  <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
+                    {entry.name}
+                    {entry.brand === 'Bosch' && <span className="w-2 h-2 rounded-full bg-blue-500" title="Bosch Lead"></span>}
+                  </h3>
                   <p className="text-xs font-medium text-gray-400">{entry.company || 'No Company'}</p>
                 </div>
               </div>
