@@ -1,6 +1,10 @@
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const AuditLog = require('../models/AuditLog');
+const CustomerEntry = require('../models/CustomerEntry');
+const Followup = require('../models/Followup');
+const Leave = require('../models/Leave');
+const Quote = require('../models/Quote');
 
 // @desc    Get all employees
 // @route   GET /api/admin/employees
@@ -182,4 +186,52 @@ const markHoliday = async (req, res) => {
   res.json({ message: `Holiday marked successfully for ${holidayRecords.length} employees`, count: holidayRecords.length });
 };
 
-module.exports = { getEmployees, getEmployeeAttendance, removeEmployee, addManualAttendance, convertOvertime, markAsLeave, markHoliday, removeHoliday };
+// @desc    Export all data as SQL
+// @route   GET /api/admin/export-sql
+// @access  Private/Admin
+const exportSql = async (req, res) => {
+  try {
+    let sqlDump = '-- Database SQL Dump\\n\\n';
+
+    const models = {
+      Users: await User.find({}).lean(),
+      Attendances: await Attendance.find({}).lean(),
+      CustomerEntries: await CustomerEntry.find({}).lean(),
+      Followups: await Followup.find({}).lean(),
+      Leaves: await Leave.find({}).lean(),
+      Quotes: await Quote.find({}).lean(),
+      AuditLogs: await AuditLog.find({}).lean()
+    };
+
+    const escapeString = (str) => {
+      if (str === null || str === undefined) return 'NULL';
+      if (typeof str === 'number' || typeof str === 'boolean') return str;
+      if (typeof str === 'object') {
+        return `'${JSON.stringify(str).replace(/'/g, "''")}'`;
+      }
+      return `'${String(str).replace(/'/g, "''")}'`;
+    };
+
+    for (const [tableName, docs] of Object.entries(models)) {
+      if (docs.length === 0) continue;
+      
+      sqlDump += `-- Table: ${tableName}\\n`;
+      for (const doc of docs) {
+        const keys = Object.keys(doc).filter(k => k !== '__v'); // omit mongoose version key
+        const cols = keys.map(k => `\`${k}\``).join(', ');
+        const vals = keys.map(k => escapeString(doc[k])).join(', ');
+        sqlDump += `INSERT INTO \`${tableName}\` (${cols}) VALUES (${vals});\\n`;
+      }
+      sqlDump += '\\n';
+    }
+
+    res.setHeader('Content-Type', 'application/sql');
+    res.setHeader('Content-Disposition', 'attachment; filename=database_dump.sql');
+    res.send(sqlDump);
+  } catch (error) {
+    console.error('Error generating SQL dump:', error);
+    res.status(500).json({ message: 'Error generating SQL dump' });
+  }
+};
+
+module.exports = { getEmployees, getEmployeeAttendance, removeEmployee, addManualAttendance, convertOvertime, markAsLeave, markHoliday, removeHoliday, exportSql };

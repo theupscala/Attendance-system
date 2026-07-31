@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Filter, Users, Briefcase, Calendar, Eye, Phone, LayoutList, UserCircle } from 'lucide-react';
+import { Filter, Users, Briefcase, Calendar, Eye, Phone, LayoutList, UserCircle, Download } from 'lucide-react';
 import api from '../services/api';
 import CustomerDetailsDrawer from '../components/CustomerDetailsDrawer';
 
@@ -280,8 +280,29 @@ const AdminReports = () => {
               }
             </p>
           </div>
-          {mode === 'EMPLOYEE' && (
-            <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
+            <button
+              onClick={async () => {
+                try {
+                  const res = await api.get('/admin/export-sql', { responseType: 'blob' });
+                  const url = window.URL.createObjectURL(new Blob([res.data]));
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', 'database_dump.sql');
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                } catch (err) {
+                  console.error('Error downloading SQL dump', err);
+                  alert('Failed to download SQL dump');
+                }
+              }}
+              className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all flex items-center gap-2 whitespace-nowrap"
+            >
+              <Download size={16} /> Export to SQL
+            </button>
+            {mode === 'EMPLOYEE' && (
+              <div className="flex gap-4">
               <div className="bg-blue-50/50 px-4 py-2 border border-blue-100 rounded-xl flex items-center gap-3">
                 <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Users size={18} /></div>
                 <div>
@@ -298,6 +319,7 @@ const AdminReports = () => {
               </div>
             </div>
           )}
+          </div>
         </div>
 
         {error && (
